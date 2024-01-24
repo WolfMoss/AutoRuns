@@ -32,4 +32,5 @@ jobs:
         pip install xlsxwriter
     - name: Run weather Report
       run: |
-        python PYQingXuZQ/main.py
+        cd /PYQingXuZQ
+        python main.py

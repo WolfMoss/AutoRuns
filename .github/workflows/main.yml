@@ -29,6 +29,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install requests
         pip install openpyxl
+        pip install xlsxwriter
     - name: Run weather Report
       run: |
         python PYQingXuZQ/main.py

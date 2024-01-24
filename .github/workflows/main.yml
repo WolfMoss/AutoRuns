@@ -33,4 +33,5 @@ jobs:
     - name: Run weather Report
       run: |
         ls
+        cd PYQingXuZQ
         python main.py

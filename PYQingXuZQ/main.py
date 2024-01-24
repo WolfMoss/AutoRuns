@@ -4,13 +4,8 @@
 # 按 双击 Shift 在所有地方搜索类、文件、工具窗口、操作和设置。
 # pyinstaller -F main.py
 
-import requests, json, time, sys
-from contextlib import closing
-from bs4 import BeautifulSoup
+import requests, json
 import datetime
-import smtplib
-from email.mime.text import MIMEText
-from chinese_calendar import is_workday
 import openpyxl
 import os
 

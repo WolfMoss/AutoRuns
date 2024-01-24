@@ -28,6 +28,7 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install requests
+        pip install openpyxl
     - name: Run weather Report
       run: |
         python PYQingXuZQ/main.py

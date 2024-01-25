@@ -85,69 +85,69 @@ def doBeiJiaoSuo(table_name):
     db.commit()
     db.close()
 #-------------------------主逻辑--------------------------------
+if __name__ == "__main__":
+    # 获取当前时间戳和日期
+    timestamp = str(int(datetime.now().timestamp()))
+    date = datetime.now().strftime('%Y%m%d')
 
-# 获取当前时间戳和日期
-timestamp = str(int(datetime.now().timestamp()))
-date = datetime.now().strftime('%Y%m%d')
+    # 构建表名
+    table_name = f'gainian_{timestamp}_{date}'
 
-# 构建表名
-table_name = f'gainian_{timestamp}_{date}'
+    db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
+    cursor = db.cursor()
 
-db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
-cursor = db.cursor()
+    # 创建表的 SQL 语句
+    cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+    cursor.execute("SET NAMES utf8mb4;")
+    sql = f"""
+    
+    CREATE TABLE `{table_name}`  (
+      `code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '代码0',
+      `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称1',
+      `concept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '小概念11-1',
+      `conceptbig` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '大概念11-2',
+      `conceptall` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '概念11',
+      `increase` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '涨幅5',
+      `risingSpeed` double NULL DEFAULT NULL COMMENT '涨速6',
+      `mainNet` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '主力净额13',
+      `circulationValue` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '流通值15',
+      `day` date NULL DEFAULT NULL COMMENT '日期',
+      `nowdatetime` datetime(0) NULL DEFAULT NULL COMMENT '当前时间'
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+    
+    """
+    # 执行 SQL 语句
+    cursor.execute(sql)
 
-# 创建表的 SQL 语句
-cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
-cursor.execute("SET NAMES utf8mb4;")
-sql = f"""
+    cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
 
-CREATE TABLE `{table_name}`  (
-  `code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '代码0',
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称1',
-  `concept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '小概念11-1',
-  `conceptbig` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '大概念11-2',
-  `conceptall` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '概念11',
-  `increase` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '涨幅5',
-  `risingSpeed` double NULL DEFAULT NULL COMMENT '涨速6',
-  `mainNet` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '主力净额13',
-  `circulationValue` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '流通值15',
-  `day` date NULL DEFAULT NULL COMMENT '日期',
-  `nowdatetime` datetime(0) NULL DEFAULT NULL COMMENT '当前时间'
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+    db.commit()
+    db.close()
 
-"""
-# 执行 SQL 语句
-cursor.execute(sql)
+    #北交所
+    doBeiJiaoSuo(table_name)
 
-cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+    #沪深
+    for i in range(0, 90):
+        try:
 
-db.commit()
-db.close()
-
-#北交所
-doBeiJiaoSuo(table_name)
-
-#沪深
-for i in range(0, 90):
-    try:
-
-        # 延迟
-        time.sleep(0.5)
+            # 延迟
+            time.sleep(0.5)
 
 
-        st=56
+            st=56
 
-        jsondata = getGainian(st, st*i, '')
-        print(len(jsondata['list']))
+            jsondata = getGainian(st, st*i, '')
+            print(len(jsondata['list']))
 
-        db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
-        cursor = db.cursor()
-        for row in jsondata['list']:
+            db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
+            cursor = db.cursor()
+            for row in jsondata['list']:
 
-            sql = f"INSERT INTO `quant`.`{table_name}`(`code`, `name`,  `conceptall`) VALUES ('{row[0]}', '{row[1]}', '{row[4]}')"
-            cursor.execute(sql)
-        db.commit()
-        db.close()
-    except:
-        print(traceback.print_exc())
+                sql = f"INSERT INTO `quant`.`{table_name}`(`code`, `name`,  `conceptall`) VALUES ('{row[0]}', '{row[1]}', '{row[4]}')"
+                cursor.execute(sql)
+            db.commit()
+            db.close()
+        except:
+            print(traceback.print_exc())
 

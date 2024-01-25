@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     #北交所
     doBeiJiaoSuo(table_name)
-
+    print("北交所完成,开始沪深")
     #沪深
     for i in range(0, 90):
         try:
@@ -151,3 +151,6 @@ if __name__ == "__main__":
         except:
             print(traceback.print_exc())
 
+
+    #退出程序
+    exit(0)

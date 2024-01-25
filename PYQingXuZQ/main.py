@@ -237,6 +237,18 @@ def print_hi(name):
     data.save(xlsxpatch)
     print("完成，excel新增了一行，请打开查看！")
 
+    url = "https://api.github.com/repos/WolfMoss/AutoRuns/contents/PYQingXuZQ/晋级率模板.xlsx"
+
+    payload = {}
+    headers = {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': 'Bearer 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'
+    }
+
+    response = requests.request("GET", url, headers=headers, data=payload)
+
+    oldfilejson= response.json()
+
     # 将文件转换为 Base64
     base64_string = file_to_base64(xlsxpatch)
 
@@ -258,7 +270,7 @@ def print_hi(name):
     data = {
         'message': 'Update file',
         'content': base64_string,
-        'sha':'e1405197b65d57fb6be62baed18fe6334fc6afad'
+        'sha':oldfilejson['sha']
     }
 
     # 替换 URL 中的占位符

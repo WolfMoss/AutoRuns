@@ -1,3 +1,5 @@
+from datetime import datetime
+import time
 import traceback
 import pymysql
 import json
@@ -62,12 +64,12 @@ def getKplGn(code):
 
 
 #获取北交所股票列表概念
-def doBeiJiaoSuo():
+def doBeiJiaoSuo(table_name):
     beiJiaoList = getBeiJiaoSuo()['data']['diff']
 
     db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
     cursor = db.cursor()
-    cursor.execute("DELETE FROM gainian")
+    cursor.execute(f"DELETE FROM {table_name}")
 
 
     for row in beiJiaoList:
@@ -76,8 +78,7 @@ def doBeiJiaoSuo():
         Cname = datajson['Concept'][0]['CName']
         if Cname == '融资融券' and len(datajson['Concept'])>1 :
             Cname = datajson['Concept'][1]['CName']
-        sql = "INSERT INTO `quant`.`gainian`(`code`, `name`,  `conceptall`) VALUES ('%s', '%s', '%s')" % (
-        bjcode, datajson['Company']['Name'],Cname)
+        sql = f"INSERT INTO `quant`.`{table_name}`(`code`, `name`,  `conceptall`) VALUES ('{bjcode}', '{datajson['Company']['Name']}', '{Cname}')"
         cursor.execute(sql)
         print(f'code=[{bjcode}],name=[{Cname}]')
 
@@ -85,12 +86,55 @@ def doBeiJiaoSuo():
     db.close()
 #-------------------------主逻辑--------------------------------
 
+# 获取当前时间戳和日期
+timestamp = str(int(datetime.now().timestamp()))
+date = datetime.now().strftime('%Y%m%d')
+
+# 构建表名
+table_name = f'gainian_{timestamp}_{date}'
+
+db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
+cursor = db.cursor()
+
+# 创建表的 SQL 语句
+cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+cursor.execute("SET NAMES utf8mb4;")
+sql = f"""
+
+CREATE TABLE `{table_name}`  (
+  `code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '代码0',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称1',
+  `concept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '小概念11-1',
+  `conceptbig` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '大概念11-2',
+  `conceptall` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '概念11',
+  `increase` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '涨幅5',
+  `risingSpeed` double NULL DEFAULT NULL COMMENT '涨速6',
+  `mainNet` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '主力净额13',
+  `circulationValue` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '流通值15',
+  `day` date NULL DEFAULT NULL COMMENT '日期',
+  `nowdatetime` datetime(0) NULL DEFAULT NULL COMMENT '当前时间'
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+"""
+# 执行 SQL 语句
+cursor.execute(sql)
+
+cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+db.commit()
+db.close()
+
 #北交所
-doBeiJiaoSuo()
+doBeiJiaoSuo(table_name)
 
 #沪深
 for i in range(0, 90):
     try:
+
+        # 延迟
+        time.sleep(0.5)
+
+
         st=56
 
         jsondata = getGainian(st, st*i, '')
@@ -100,7 +144,7 @@ for i in range(0, 90):
         cursor = db.cursor()
         for row in jsondata['list']:
 
-            sql = "INSERT INTO `quant`.`gainian`(`code`, `name`,  `conceptall`) VALUES ('%s', '%s', '%s')" % (row[0], row[1], row[4])
+            sql = f"INSERT INTO `quant`.`{table_name}`(`code`, `name`,  `conceptall`) VALUES ('{row[0]}', '{row[1]}', '{row[4]}')"
             cursor.execute(sql)
         db.commit()
         db.close()

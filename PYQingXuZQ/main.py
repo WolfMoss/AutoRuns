@@ -48,6 +48,8 @@ def print_hi(name):
             nowdateCode = indexDate.strftime('%Y%m%d')
 
             xingQi = indexDate.weekday() + 1
+            if xingQi in {6,7}:
+                continue
 
             ZTURL = 'http://push2ex.eastmoney.com/getTopicZTPool?cb=callbackdata5701347&ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=320&sort=fbt%3Aasc&date=' + nowdateCode + '&_=1647191502623'
             ZTreq = requests.get(ZTURL)

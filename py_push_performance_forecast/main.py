@@ -118,57 +118,61 @@ for tr in tr_elements:
 conn.close()
 PostDingMes('今日公告:'+ths_report_type,ddmsg)
 
-your_access_tokenurl = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=wx27d12a15e6329c2e&secret=5ddab1f5eac8bd4afe5d9185442b2447"
-response = requests.get(your_access_tokenurl).json()
 
-# 获取到的access_token
-ACCESS_TOKEN=""
-if "response" in response:
-    ACCESS_TOKEN = response["access_token"]
-else:
-    print("获取access_token失败")
-    print(response)
-
-# 获取素材
-draft_content = {
-    "type":"image",
-    "offset":0,
-    "count":20
-}
-response = requests.post(f"https://api.weixin.qq.com/cgi-bin/material/batchget_material?access_token={ACCESS_TOKEN}", data=json.dumps(draft_content))
-response.encoding = 'utf-8'
-for i in response.json()["item"]:
-    if i["name"]=="开盘啦概念.png":
-        your_thumb_media_id=i["media_id"]
-# 草稿内容信息
-draft_content = {
-    "articles": [
-        {
-            "title": "今日业绩公告",
-            "thumb_media_id": your_thumb_media_id,  # 缩略图媒体ID
-            "author": "wolfmoss",
-            #"digest": "摘要信息",
-            "content": ddmsg,  # 正文，支持HTML标签
-            #"content_source_url": "原文链接（可选）",
-            "show_cover_pic": 1,  # 是否显示封面，0：不显示，1：显示
-            "need_open_comment": 0,  # 是否开启评论，0：不开启，1：开启
-            "only_fans_can_comment": 0,  # 是否粉丝才可评论，0：所有人可评论，1：仅粉丝可评论
-        }
-    ]
-}
-
-# 新建草稿接口URL
-create_draft_url = f"https://api.weixin.qq.com/cgi-bin/draft/add?access_token={ACCESS_TOKEN}"
-response = requests.post(create_draft_url, data=json.dumps(draft_content).encode("utf-8"))
-
-if response.status_code == 200:
-    result = response.json()
-
-    if "media_id" in result:
-        print("草稿创建成功", result)
-        media_id = result["media_id"]
-        # 发布草稿接口URL
+def PostWeChat():
+    global response, result
+    your_access_tokenurl = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=wx27d12a15e6329c2e&secret=5ddab1f5eac8bd4afe5d9185442b2447"
+    response = requests.get(your_access_tokenurl).json()
+    # 获取到的access_token
+    ACCESS_TOKEN = ""
+    if "response" in response:
+        ACCESS_TOKEN = response["access_token"]
     else:
-        print("草稿创建失败", result)
-else:
-    print("请求失败", response.status_code)
+        print("获取access_token失败")
+        print(response)
+    # 获取素材
+    draft_content = {
+        "type": "image",
+        "offset": 0,
+        "count": 20
+    }
+    response = requests.post(
+        f"https://api.weixin.qq.com/cgi-bin/material/batchget_material?access_token={ACCESS_TOKEN}",
+        data=json.dumps(draft_content))
+    response.encoding = 'utf-8'
+    for i in response.json()["item"]:
+        if i["name"] == "开盘啦概念.png":
+            your_thumb_media_id = i["media_id"]
+    # 草稿内容信息
+    draft_content = {
+        "articles": [
+            {
+                "title": "今日业绩公告",
+                "thumb_media_id": your_thumb_media_id,  # 缩略图媒体ID
+                "author": "wolfmoss",
+                # "digest": "摘要信息",
+                "content": ddmsg,  # 正文，支持HTML标签
+                # "content_source_url": "原文链接（可选）",
+                "show_cover_pic": 1,  # 是否显示封面，0：不显示，1：显示
+                "need_open_comment": 0,  # 是否开启评论，0：不开启，1：开启
+                "only_fans_can_comment": 0,  # 是否粉丝才可评论，0：所有人可评论，1：仅粉丝可评论
+            }
+        ]
+    }
+    # 新建草稿接口URL
+    create_draft_url = f"https://api.weixin.qq.com/cgi-bin/draft/add?access_token={ACCESS_TOKEN}"
+    response = requests.post(create_draft_url, data=json.dumps(draft_content).encode("utf-8"))
+    if response.status_code == 200:
+        result = response.json()
+
+        if "media_id" in result:
+            print("草稿创建成功", result)
+            media_id = result["media_id"]
+            # 发布草稿接口URL
+        else:
+            print("草稿创建失败", result)
+    else:
+        print("请求失败", response.status_code)
+
+
+#PostWeChat()

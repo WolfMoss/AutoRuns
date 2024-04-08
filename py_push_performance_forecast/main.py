@@ -122,8 +122,9 @@ your_access_tokenurl = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=clie
 response = requests.get(your_access_tokenurl).json()
 
 # 获取到的access_token
+ACCESS_TOKEN=""
 if "response" in response:
-    ACCESS_TOKEN = response.json()["access_token"]
+    ACCESS_TOKEN = response["access_token"]
 else:
     print("获取access_token失败")
 

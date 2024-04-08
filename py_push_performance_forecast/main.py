@@ -119,12 +119,13 @@ conn.close()
 PostDingMes('今日公告:'+ths_report_type,ddmsg)
 
 your_access_tokenurl = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=wx27d12a15e6329c2e&secret=5ddab1f5eac8bd4afe5d9185442b2447"
-response = requests.get(your_access_tokenurl)
-
-
+response = requests.get(your_access_tokenurl).json()
 
 # 获取到的access_token
-ACCESS_TOKEN = response.json()["access_token"]
+if "response" in response:
+    ACCESS_TOKEN = response.json()["access_token"]
+else:
+    print("获取access_token失败")
 
 # 获取素材
 draft_content = {

@@ -127,6 +127,7 @@ if "response" in response:
     ACCESS_TOKEN = response["access_token"]
 else:
     print("获取access_token失败")
+    print(response)
 
 # 获取素材
 draft_content = {

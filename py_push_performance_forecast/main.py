@@ -74,6 +74,7 @@ print(ths_report_type)
 
 tr_elements = tree.xpath('//tbody//tr')
 ddmsg = ""
+ddmsg_html = ""
 for tr in tr_elements:
     tds = tr.xpath('./td')
     ths_code = tds[1].xpath('./a')[0].text
@@ -108,6 +109,7 @@ for tr in tr_elements:
                 f'插入：{ths_report_type} {ths_code} {ths_name} {ths_pf_type} {ths_pf_desc} {ths_profit_range.strip()} {ths_profit_oldyear} {ths_date}')
 
             ddmsg =ddmsg+ f"【{ths_code} {ths_name}】{ths_pf_type} 变动幅度{ths_profit_range.strip()}% {ths_profit_oldyear}\n\n"
+            ddmsg_html=ddmsg_html + f"<div>【{ths_code} {ths_name}】{ths_pf_type} 变动幅度{ths_profit_range.strip()}% {ths_profit_oldyear}</div>"
         # 提交更改
         conn.commit()
 
@@ -125,7 +127,7 @@ def PostWeChat():
     response = requests.get(your_access_tokenurl).json()
     # 获取到的access_token
     ACCESS_TOKEN = ""
-    if "response" in response:
+    if "access_token" in response:
         ACCESS_TOKEN = response["access_token"]
     else:
         print("获取access_token失败")
@@ -160,8 +162,12 @@ def PostWeChat():
         ]
     }
     # 新建草稿接口URL
+    header_dict = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36',
+        'Content-Type': 'application/json; charset=utf-8'
+    }
     create_draft_url = f"https://api.weixin.qq.com/cgi-bin/draft/add?access_token={ACCESS_TOKEN}"
-    response = requests.post(create_draft_url, data=json.dumps(draft_content).encode("utf-8"))
+    response = requests.post(create_draft_url,headers=header_dict, data=bytes(json.dumps(draft_content,ensure_ascii=False).encode('utf-8')))
     if response.status_code == 200:
         result = response.json()
 
@@ -169,6 +175,12 @@ def PostWeChat():
             print("草稿创建成功", result)
             media_id = result["media_id"]
             # 发布草稿接口URL
+            publish_draft_url = f"https://api.weixin.qq.com/cgi-bin/freepublish/submit?access_token={ACCESS_TOKEN}"
+            publish_draft_content = {
+                "media_id": media_id
+            }
+            response = requests.post(publish_draft_url, data=json.dumps(publish_draft_content))
+            print(response.json())
         else:
             print("草稿创建失败", result)
     else:

@@ -34,7 +34,7 @@ def getGainian(count:str, page:str,riqi:str):
 
     url = "https://apphq.longhuvip.com/w1/api/index.php"
 
-    payload = f"Order=1&st={count}&a=RealRankingInfo_W8&c=NewStockRanking&PhoneOSNew=2&DeviceID=ca883df0-1b0d-3b8a-9836-e07c2f69840d&index={page}&Date={riqi}&apiv=w21&Type=6&Filter=0&Ratio=6&"
+    payload = f"Order=1&st={count}&a=RealRankingInfo_W8&c=NewStockRanking&PhoneOSNew=2&DeviceID=ca883df0-1b0d-3b8a-9836-e07c2f69840d&index={page}&Date={riqi}&apiv=w21&Type=7&Filter=0&Ratio=6&"
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
       'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 7.1.2; SM-G955N Build/NRD90M.G955NKSU1AQDC)',
@@ -86,6 +86,9 @@ def doBeiJiaoSuo(table_name):
     db.close()
 #-------------------------主逻辑--------------------------------
 if __name__ == "__main__":
+
+    #jsondata = getGainian(56, 0, '')
+
     # 获取当前时间戳和日期
     timestamp = str(int(datetime.now().timestamp()))
     date = datetime.now().strftime('%Y%m%d')

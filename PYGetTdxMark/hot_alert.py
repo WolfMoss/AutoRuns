@@ -1,3 +1,5 @@
+import json
+
 import requests
 import aiohttp
 import asyncio
@@ -46,12 +48,14 @@ async def disconnect(sid):
 async def send_periodic_message():
     while True:
         jsondata = getGainian(56, 0, '')
+        ptdatas = []
         for row in jsondata['list']:
             code=row[0]
             name=row[1]
             conceptall=row[4]
+            ptdatas.append({'code': code, 'name': name, 'conceptall': conceptall})
         # 定时发送消息给所有客户端
-        await sio.emit('message', "每秒一次的消息")
+        await sio.emit('message', json.dumps(ptdatas))
         await asyncio.sleep(2)
 
 async def main():

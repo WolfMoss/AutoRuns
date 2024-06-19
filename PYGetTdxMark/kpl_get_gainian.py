@@ -87,7 +87,7 @@ def doBeiJiaoSuo(table_name):
 #-------------------------主逻辑--------------------------------
 if __name__ == "__main__":
 
-    #jsondata = getGainian(56, 0, '')
+    jsondata = getGainian(56, 0, '')
 
     # 获取当前时间戳和日期
     timestamp = str(int(datetime.now().timestamp()))

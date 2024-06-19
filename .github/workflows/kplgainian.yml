@@ -32,5 +32,5 @@ jobs:
     - name: Run weather Report
       run: |
         ls
-        cd PYSetTdxMark
+        cd PYGetTdxMark
         python kpl_get_gainian.py

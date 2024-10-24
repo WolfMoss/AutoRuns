@@ -73,14 +73,18 @@ def doBeiJiaoSuo(table_name):
 
 
     for row in beiJiaoList:
-        bjcode = row['f12']
-        datajson = getKplGn(bjcode)
-        Cname = datajson['Concept'][0]['CName']
-        if Cname == '融资融券' and len(datajson['Concept'])>1 :
-            Cname = datajson['Concept'][1]['CName']
-        sql = f"INSERT INTO `quant`.`{table_name}`(`code`, `name`,  `conceptall`) VALUES ('{bjcode}', '{datajson['Company']['Name']}', '{Cname}')"
-        cursor.execute(sql)
-        print(f'code=[{bjcode}],name=[{Cname}]')
+        try:
+            bjcode = row['f12']
+            datajson = getKplGn(bjcode)
+            Cname = datajson['Concept'][0]['CName']
+            if Cname == '融资融券' and len(datajson['Concept']) > 1:
+                Cname = datajson['Concept'][1]['CName']
+            sql = f"INSERT INTO `quant`.`{table_name}`(`code`, `name`,  `conceptall`) VALUES ('{bjcode}', '{datajson['Company']['Name']}', '{Cname}')"
+            cursor.execute(sql)
+            print(f'code=[{bjcode}],name=[{Cname}]')
+        except:
+            continue
+
 
     db.commit()
     db.close()
@@ -94,35 +98,14 @@ if __name__ == "__main__":
     date = datetime.now().strftime('%Y%m%d')
 
     # 构建表名
-    table_name = f'gainian_{timestamp}_{date}'
+    table_name = f'gainian'
 
     db = pymysql.connect(host='64.110.105.176', user='root', passwd='ilikecs123!', port=3306, db='quant')
     cursor = db.cursor()
-
-    # 创建表的 SQL 语句
-    cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
-    cursor.execute("SET NAMES utf8mb4;")
-    sql = f"""
-    
-    CREATE TABLE `{table_name}`  (
-      `code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '代码0',
-      `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称1',
-      `concept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '小概念11-1',
-      `conceptbig` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '大概念11-2',
-      `conceptall` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '概念11',
-      `increase` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '涨幅5',
-      `risingSpeed` double NULL DEFAULT NULL COMMENT '涨速6',
-      `mainNet` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '主力净额13',
-      `circulationValue` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '流通值15',
-      `day` date NULL DEFAULT NULL COMMENT '日期',
-      `nowdatetime` datetime(0) NULL DEFAULT NULL COMMENT '当前时间'
-    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
-    
-    """
+    sql = "DELETE FROM gainian"
     # 执行 SQL 语句
     cursor.execute(sql)
 
-    cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
 
     db.commit()
     db.close()
@@ -147,7 +130,7 @@ if __name__ == "__main__":
             cursor = db.cursor()
             for row in jsondata['list']:
 
-                sql = f"INSERT INTO `quant`.`{table_name}`(`code`, `name`,  `conceptall`) VALUES ('{row[0]}', '{row[1]}', '{row[4]}')"
+                sql = f"INSERT INTO `quant`.`{table_name}`(`code`, `name`,  `conceptall`) VALUES ('{row[0]}', '{row[1]}', '{str(row[4]).split(',')[0]}')"
                 cursor.execute(sql)
             db.commit()
             db.close()

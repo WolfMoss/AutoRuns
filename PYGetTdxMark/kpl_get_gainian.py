@@ -100,7 +100,7 @@ if __name__ == "__main__":
     # 构建表名
     table_name = f'gainian'
 
-    db = pymysql.connect(host='64.110.105.176', user='root', passwd='ilikecs123!', port=3306, db='quant')
+    db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
     cursor = db.cursor()
     sql = "DELETE FROM gainian"
     # 执行 SQL 语句
@@ -126,11 +126,11 @@ if __name__ == "__main__":
             jsondata = getGainian(st, st*i, '')
             print(len(jsondata['list']))
 
-            db = pymysql.connect(host='64.110.105.176', user='root', passwd='ilikecs123!', port=3306, db='quant')
+            db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
             cursor = db.cursor()
             for row in jsondata['list']:
 
-                sql = f"INSERT INTO `quant`.`{table_name}`(`code`, `name`,  `conceptall`) VALUES ('{row[0]}', '{row[1]}', '{str(row[4]).split(',')[0]}')"
+                sql = f"INSERT INTO `quant`.`{table_name}`(`code`, `name`,  `conceptall`) VALUES ('{row[0]}', '{row[1]}', '{str(row[4]).split('、')[0]}')"
                 cursor.execute(sql)
             db.commit()
             db.close()

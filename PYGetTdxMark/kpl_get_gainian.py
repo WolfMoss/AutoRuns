@@ -67,7 +67,7 @@ def getKplGn(code):
 def doBeiJiaoSuo(table_name):
     beiJiaoList = getBeiJiaoSuo()['data']['diff']
 
-    db = pymysql.connect(host='64.110.105.176', user='root', passwd='ilikecs123!', port=3306, db='quant')
+    db = pymysql.connect(hhost='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
     cursor = db.cursor()
     cursor.execute(f"DELETE FROM {table_name}")
 

@@ -32,5 +32,5 @@ jobs:
     - name: Run weather Report
       run: |
         ls
-        cd py_turnover Indicator
+        cd py_turnover_Indicator
         python main.py

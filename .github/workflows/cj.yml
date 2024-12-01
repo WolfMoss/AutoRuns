@@ -29,6 +29,8 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install requests
         pip install pymysql
+        pip install akshare
+        pip install pandas
     - name: Run weather Report
       run: |
         ls

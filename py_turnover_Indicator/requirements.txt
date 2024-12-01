@@ -1,2 +1,4 @@
 requests~=2.31.0
 PyMySQL~=1.1.1
+akshare~=1.15.39
+pandas~=2.2.3

@@ -4,12 +4,8 @@ import requests
 import pymysql
 import akshare as ak
 
-stock_zh_a_spot_em_df = ak.stock_zh_a_spot_em()
-# 筛选成交额前五的数据
-top_five = stock_zh_a_spot_em_df.nlargest(5, '成交额')
-# 累加前五个数据的成交额
-amount_sum = float(top_five['成交额'].sum())/100000000
-print(amount_sum)
+
+
 
 
 #生成时间戳例如1732807638776
@@ -60,14 +56,26 @@ cj_date = res["rows"][0]["id"]
 cj_turnover=float(res["rows"][0]["cell"]["trade_amount"])
 print(res["rows"][0]["id"],res["rows"][0]["cell"]["trade_amount"])
 
+stock_zh_a_spot_em_df = ak.stock_zh_a_spot_em()
+# 筛选成交额前五的数据
+top_five = stock_zh_a_spot_em_df.nlargest(5, '成交额')
+# 累加前五个数据的成交额
+amount_sum = float(top_five['成交额'].sum())/100000000
+print(amount_sum)
 # 假设你有一些数据需要更新
 new_cj_top5_proportion = amount_sum / cj_turnover
 # 保留小数点后4位
 new_cj_top5_proportion = round(new_cj_top5_proportion, 4)
 
+stock_zh_index_spot_em_df = ak.stock_zh_index_spot_em(symbol="上证系列指数")
+# 筛选"代码"字段值为000001的行
+selected_row = stock_zh_index_spot_em_df[stock_zh_index_spot_em_df['代码'] == '000001']
+# 获取该行的"最新价"字段值
+latest_price = selected_row['最新价'].values[0]
+
 db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
 cursor = db.cursor()
-sql = f"INSERT INTO `quant`.`a_cj`(`cj_date`, `cj_turnover`,`cj_top5`,`cj_top5_proportion`) VALUES ('{cj_date}', '{cj_turnover}', '{amount_sum}', '{new_cj_top5_proportion}')"
+sql = f"INSERT INTO `quant`.`a_cj`(`cj_date`, `cj_turnover`,`cj_top5`,`cj_top5_proportion`,`cj_szzs`) VALUES ('{cj_date}', '{cj_turnover}', '{amount_sum}', '{new_cj_top5_proportion}','{latest_price}')"
 # 执行 SQL 语句
 cursor.execute(sql)
 print('插入成功', sql)

@@ -82,7 +82,7 @@ for date, amount_sum in top_five_amount_sum.items():
         new_cj_top5_proportion = amount_sum/cj_turnover
         #保留小数点后4位
         new_cj_top5_proportion = round(new_cj_top5_proportion, 4)
-    
+
 
 
 

@@ -5,9 +5,6 @@ import pymysql
 import akshare as ak
 
 
-
-
-
 #生成时间戳例如1732807638776
 def get_timestamp():
     return int(round(time.time() * 1000))

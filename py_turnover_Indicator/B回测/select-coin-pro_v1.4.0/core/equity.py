@@ -347,6 +347,7 @@ def start_simulation(init_capital, leverages, spot_lot_sizes, swap_lot_sizes, sp
 
         """4. 计算目标持仓"""
         # 并不是所有的时间点都需要计算目标持仓，比如D持仓下，只需要在23点更新0点的目标持仓
+        #print("I==",i,";","require_rebalance[i]==",require_rebalance[i])
         if require_rebalance[i] == 1:
             target_lots_spot, target_lots_swap = pos_calc.calc_lots(equity_leveraged, spot_close_p[i], sim_spot.lots,
                                                                     spot_ratio[i], swap_close_p[i], sim_swap.lots,

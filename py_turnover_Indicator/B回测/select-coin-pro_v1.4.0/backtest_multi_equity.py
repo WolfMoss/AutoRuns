@@ -13,7 +13,7 @@ import warnings
 
 import pandas as pd
 
-from config import swap_path, backtest_name
+from config_低价币多空策略 import swap_path, backtest_name
 from core.backtest import find_best_params
 from core.evaluate import strategy_evaluate
 from core.figure import draw_equity_curve_plotly

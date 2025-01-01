@@ -1,8 +1,15 @@
 """
-选币策略回测框架，包含以下2个部分
-1. 回测策略细节配置
-2. 回测全局设置
+邢不行™️ 策略分享会
+选币回测框架
+
+版权所有 ©️ 邢不行
+微信: xbx6660
+
+本代码仅供个人学习使用，未经授权不得复制、修改或用于商业用途。
+
+Author: 邢不行
 """
+
 import os
 from pathlib import Path
 
@@ -14,59 +21,37 @@ from core.utils.path_kit import get_folder_path
 # ====================================================================================================
 # region 回测策略细节配置
 start_date = '2021-01-01'  # 回测开始时间
-end_date = '2024-12-24'  # 回测结束时间
+end_date = '2024-12-24 23:00:00'  # 回测结束时间
 
-backtest_name = '低价缩量组合策略'  # 回测的策略组合的名称。可以自己任意取。一般建议，一个回测组，就是实盘中的一个账户。
+backtest_name = '低价币中性策略'  # 回测的策略组合的名称。可以自己任意取。一般建议，一个回测组，就是实盘中的一个账户。
 """策略配置"""
 strategy_list = [
     # === 低价币中性策略
     {
         # 策略名称。与strategy目录中的策略文件名保持一致。
         "strategy": "Strategy_低价币多空策略",
-        "offset_list": [0],  # list(range(0, 7, 1)),
-        "hold_period": "1H",
-        "is_use_spot": True,
-        # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
+        "offset_list": list(range(0, 24, 1)),  # 只选部分offset[1, 3, 6]；
+        #"offset_list": [0,1],  # 只选部分offset[1, 3, 6]；
+        "hold_period": "24H",  # 小时级别可选1H到24H；也支持1D交易日级别
+        "is_use_spot": True,  # 多头支持交易现货；
+        # 资金权重。程序会自动根据这个权重计算你的策略占比
         'cap_weight': 1,
-        'long_cap_weight': 1,
+        'long_cap_weight': 1,  # 可以多空比例不同，多空不平衡对策略收益影响大
         'short_cap_weight': 1,
         # 选币数量
-        'long_select_coin_num': 0.1,
-        'short_select_coin_num': 0.1,  # 'long_nums', (0.1, 0.2), (1, 3)
+        'long_select_coin_num': 0.1,  # 可适当减少选币数量，对策略收益影响大
+        'short_select_coin_num': 0.1,  # 四种形式：整数， 小数，'long_nums', 区间选币：(0.1, 0.2), (1, 3)
         # 选币因子信息列表，用于2_选币_单offset.py，3_计算多offset资金曲线.py共用计算资金曲线
         "factor_list": [
-            ('LowPrice', True, 168, 1),  # 多空因子名（和factors文件中相同），排序方式，参数，权重。
+            ('LowPrice', True, 168, 1),  # 多空因子名（和factors文件中相同），排序方式，参数，权重。支持多空分离，多空选币因子不一样；
         ],
         "filter_list": [
-        ],
-        "use_custom_func": False  # 使用系统内置因子计算、过滤函数
-    },
-    # === 缩量纯多
-    {
-        # 策略名称。与strategy目录中的策略文件名保持一致。
-        "strategy": "Strategy_缩量纯多策略",
-        "offset_list": list(range(0, 1, 1)),
-        "hold_period": "1H",
-        "is_use_spot": True,
-        # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-        'cap_weight': 1,
-        'long_cap_weight': 1,
-        'short_cap_weight': 0,
-        # 选币数量
-        'long_select_coin_num': 0.1,
-        'short_select_coin_num': 0,
-        # 选币因子信息列表，用于2_选币_单offset.py，3_计算多offset资金曲线.py共用计算资金曲线
-        "long_factor_list": [
-            ('VolumeMeanRatio', True, 425, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
-        ],
-        "filter_list": [
+            ('LowPrice', 168, 'rank:>1', False),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
         ],
         "use_custom_func": False  # 使用系统内置因子计算、过滤函数
     },
 ]
-# 配置再择时之后，可以使用 re_timing 进行再择时的资金曲线模拟
-re_timing = {'name': 'MovingAverage', 'params': [150]}
-rebalance_mode = {'mode': 'RebByPositionRatio', 'params': {'min_order_usdt_ratio': 10 / 100}}
+
 # 策略配置
 min_kline_num = 168  # 最少上市多久，不满该K线根数的币剔除，即剔除刚刚上市的新币。168：标识168个小时，即：7*24
 black_list = ['BTC-USDT', 'ETH-USDT']  # 拉黑名单，永远不会交易。不喜欢的币、异常的币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
@@ -92,10 +77,10 @@ avg_price_col = 'avg_price_1m'  # 用于模拟计算的平均价，预处理数�
 # 这些设置是客观事实，基本不会影响到回测的细节
 # ====================================================================================================
 # region 回测全局设置
-job_num = os.cpu_count() - 2  # 回测并行数量
+job_num = os.cpu_count()  # 回测并行数量，CPU线程数
 
 # ==== factor_col_limit 介绍 ====
-factor_col_limit = 64  # 内存优化选项，一次性计算多少列因子。64是 16GB内存 电脑的典型值
+factor_col_limit = 128  # 内存优化选项，一次性计算多少列因子。64是 16GB内存 电脑的典型值
 # - 数字越大，计算速度越快，但同时内存占用也会增加。
 # - 该数字是在 "因子数量 * 参数数量" 的基础上进行优化的。
 #   - 例如，当你遍历 200 个因子，每个因子有 10 个参数，总共生成 2000 列因子。
@@ -111,7 +96,7 @@ factor_col_limit = 64  # 内存优化选项，一次性计算多少列因子。6
 # 格式可以是：pre_data_path = r'D:\data\coin-binance-spot-swap-preprocess-pkl-1h'
 pre_data_path = r'D:\Downloads\coin-binance-spot-swap-preprocess-pkl-1h-2024-12-28'
 
-raw_data_path = Path(get_folder_path(pre_data_path))
+raw_data_path = Path(pre_data_path)
 # 现货数据路径
 spot_path = raw_data_path / 'spot_dict.pkl'
 # 合约数据路径

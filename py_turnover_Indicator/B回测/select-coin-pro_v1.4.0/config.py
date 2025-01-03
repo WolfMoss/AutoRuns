@@ -109,7 +109,7 @@ factor_col_limit = 64  # 内存优化选项，一次性计算多少列因子。6
 # 使用官方准备的预处理数据，专门用于本框架回测使用，大幅提高速度
 # 现货和合约1小时预处理数据（pkl格式）：https://www.quantclass.cn/data/coin/coin-binance-spot-swap-preprocess-pkl-1h
 # 格式可以是：pre_data_path = r'D:\data\coin-binance-spot-swap-preprocess-pkl-1h'
-pre_data_path = r'D:\Downloads\coin-binance-spot-swap-preprocess-pkl-1h-2024-12-28'
+pre_data_path = r'D:\dowms\coin-binance-spot-swap-preprocess-pkl-1h-2024-12-28'
 
 raw_data_path = Path(get_folder_path(pre_data_path))
 # 现货数据路径

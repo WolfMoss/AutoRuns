@@ -24,7 +24,7 @@ class BacktestSystem:
 
         # 获取股票列表
         code_list = xtdata.get_stock_list_in_sector('沪深A股')
-        #code_list=code_list[:100]
+        code_list=code_list[:100]
 
         period = "1d"
         # for i in code_list:
@@ -178,27 +178,36 @@ class BacktestSystem:
                 buy_stocks = [day_data['stock']] if day_data['buy_signal'] else []
 
             for stock in buy_stocks:
-                if current_positions < self.max_positions:
-                    # 计算每个位置的买入金额
-                    position_size = available_cash / (self.max_positions - current_positions)
+                # 如果当前持仓数已达到最大持仓限制，跳过
+                if current_positions >= self.max_positions:
+                    break
 
-                    # 计算可买入的股票数量
-                    stock_price = self.data[stock].loc[date, 'close']
-                    shares = int(position_size / stock_price)
+                # 当前股票价格
+                stock_price = self.data[stock].loc[date, 'close']
+                # 计算每个位置的最大分配资金
+                position_size = available_cash / (self.max_positions - current_positions)
 
-                    if shares > 0:
-                        # 记录买入交易
-                        trade_detail = {
-                            'symbol': stock,
-                            'entry_date': date,
-                            'entry_price': stock_price,
-                            'size': shares,
-                        }
-                        self.trade_records.append(trade_detail)
+                # 如果分配资金不足以买入至少1股，跳过
+                if stock_price <= 0 or position_size < stock_price:
+                    continue
 
-                        # 更新可用资金和持仓数量
-                        available_cash -= shares * stock_price
-                        current_positions += 1
+                # 计算可买入的股票数量
+                shares = int(position_size / stock_price)
+
+                # 确保至少买入1股
+                if shares > 0:
+                    # 记录买入交易
+                    trade_detail = {
+                        'symbol': stock,
+                        'entry_date': date,
+                        'entry_price': stock_price,
+                        'size': shares,
+                    }
+                    self.trade_records.append(trade_detail)
+
+                    # 更新可用资金和持仓数量
+                    available_cash -= shares * stock_price
+                    current_positions += 1
 
         # 计算每个股票的最终统计数据
         for stock, df in self.data.items():

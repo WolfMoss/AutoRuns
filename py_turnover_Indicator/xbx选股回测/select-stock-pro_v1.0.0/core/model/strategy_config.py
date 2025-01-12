@@ -201,7 +201,8 @@ def filter_common(df, filter_list):
     condition = pd.Series(True, index=df.index)
 
     for filter_config in filter_list:
-        col_name = f'{filter_config.name}_{str(filter_config.param)}'
+        #col_name = f'{filter_config.name}_{str(filter_config.param)}'
+        col_name = get_col_name(filter_config.name, filter_config.param)
         match filter_config.method.how:
             case 'rank':
                 rank = df.groupby('交易日期')[col_name].rank(ascending=filter_config.is_sort_asc, pct=False)

@@ -31,4 +31,4 @@ if __name__ == '__main__':
     conf = load_config()
     print(conf.info())
 
-    prepare_data(conf, boost=True)
+    prepare_data(conf, boost=False)

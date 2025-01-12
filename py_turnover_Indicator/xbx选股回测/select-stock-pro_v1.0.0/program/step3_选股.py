@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # 根据计算得到的因子进行选股
     divider('条件选股', '-')
     s_time = time.time()
-    select_stocks(conf, boost=True)
+    select_stocks(conf, boost=False)
     select_results = concat_select_results(conf)  # 合并多个策略的选币结果
 
     logger.debug(f'💾 选股结果数据大小：{select_results.memory_usage(deep=True).sum() / 1024 / 1024:.4f} MB')

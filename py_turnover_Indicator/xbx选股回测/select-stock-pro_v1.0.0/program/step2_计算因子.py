@@ -31,4 +31,4 @@ if __name__ == '__main__':
     conf = load_config()
     print(conf.info())
 
-    calculate_factors(conf, boost=True)
+    calculate_factors(conf, boost=False)

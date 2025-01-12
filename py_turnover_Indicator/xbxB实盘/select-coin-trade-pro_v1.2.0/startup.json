@@ -1,0 +1,40 @@
+{
+    "apps": [
+        {
+            "name": "startup",
+            "script": "/quantclass/select-coin-trade-pro/startup.py",
+            "exec_interpreter": "python",
+            "merge_logs": false,
+            "watch": false,
+            "error_file": "/quantclass/logs/sctp-startup.error.log",
+            "out_file": "/quantclass/logs/sctp-startup.out.log"
+        },
+        {
+            "name": "data_center",
+            "script": "/quantclass/select-coin-trade-pro/data_center.py",
+            "exec_interpreter": "python",
+            "merge_logs": false,
+            "watch": false,
+            "error_file": "/quantclass/logs/sctp-data_center.error.log",
+            "out_file": "/quantclass/logs/sctp-data_center.out.log"
+        },
+        {
+            "name": "monitor",
+            "script": "/quantclass/select-coin-trade-pro/monitor.py",
+            "exec_interpreter": "python",
+            "merge_logs": false,
+            "watch": false,
+            "error_file": "/quantclass/logs/sctp-monitor.error.log",
+            "out_file": "/quantclass/logs/sctp-monitor.out.log"
+        },
+        {
+            "name": "delist",
+            "script": "/quantclass/select-coin-trade-pro/delist.py",
+            "exec_interpreter": "python",
+            "merge_logs": false,
+            "watch": false,
+            "error_file": "/quantclass/logs/sctp-delist.error.log",
+            "out_file": "/quantclass/logs/sctp-delist.pro.log"
+        }
+    ]
+}

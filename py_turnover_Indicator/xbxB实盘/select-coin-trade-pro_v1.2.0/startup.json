@@ -2,39 +2,39 @@
     "apps": [
         {
             "name": "startup",
-            "script": "/quantclass/select-coin-trade-pro/startup.py",
+            "script": "/home/ubuntu/select-coin-trade-pro_v1.2.0/startup.py",
             "exec_interpreter": "python",
             "merge_logs": false,
             "watch": false,
-            "error_file": "/quantclass/logs/sctp-startup.error.log",
-            "out_file": "/quantclass/logs/sctp-startup.out.log"
+            "error_file": "/home/ubuntu/select-coin-trade-pro_v1.2.0/logs/sctp-startup.error.log",
+            "out_file": "/home/ubuntu/select-coin-trade-pro_v1.2.0/logs/sctp-startup.out.log"
         },
         {
             "name": "data_center",
-            "script": "/quantclass/select-coin-trade-pro/data_center.py",
+            "script": "/home/ubuntu/select-coin-trade-pro_v1.2.0/data_center.py",
             "exec_interpreter": "python",
             "merge_logs": false,
             "watch": false,
-            "error_file": "/quantclass/logs/sctp-data_center.error.log",
-            "out_file": "/quantclass/logs/sctp-data_center.out.log"
+            "error_file": "/home/ubuntu/select-coin-trade-pro_v1.2.0/logs/sctp-data_center.error.log",
+            "out_file": "/home/ubuntu/select-coin-trade-pro_v1.2.0/logs/sctp-data_center.out.log"
         },
         {
             "name": "monitor",
-            "script": "/quantclass/select-coin-trade-pro/monitor.py",
+            "script": "/home/ubuntu/select-coin-trade-pro_v1.2.0/monitor.py",
             "exec_interpreter": "python",
             "merge_logs": false,
             "watch": false,
-            "error_file": "/quantclass/logs/sctp-monitor.error.log",
-            "out_file": "/quantclass/logs/sctp-monitor.out.log"
+            "error_file": "/home/ubuntu/select-coin-trade-pro_v1.2.0/logs/sctp-monitor.error.log",
+            "out_file": "/home/ubuntu/select-coin-trade-pro_v1.2.0/logs/sctp-monitor.out.log"
         },
         {
             "name": "delist",
-            "script": "/quantclass/select-coin-trade-pro/delist.py",
+            "script": "/home/ubuntu/select-coin-trade-pro_v1.2.0/delist.py",
             "exec_interpreter": "python",
             "merge_logs": false,
             "watch": false,
-            "error_file": "/quantclass/logs/sctp-delist.error.log",
-            "out_file": "/quantclass/logs/sctp-delist.pro.log"
+            "error_file": "/home/ubuntu/select-coin-trade-pro_v1.2.0/logs/sctp-delist.error.log",
+            "out_file": "/home/ubuntu/select-coin-trade-pro_v1.2.0/logs/sctp-delist.pro.log"
         }
     ]
 }

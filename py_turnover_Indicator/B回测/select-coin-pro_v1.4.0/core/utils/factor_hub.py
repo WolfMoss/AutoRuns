@@ -1,9 +1,9 @@
 """
-邢不行™️ 策略分享会
-选币回测框架
+邢不行｜策略分享会
+选币策略框架𝓟𝓻𝓸
 
 版权所有 ©️ 邢不行
-微信: xbx6660
+微信: xbx1717
 
 本代码仅供个人学习使用，未经授权不得复制、修改或用于商业用途。
 
@@ -18,6 +18,8 @@ class DummyFactor:
     """
     ！！！！抽象因子对象，仅用于代码提示！！！！
     """
+    # 额外数据
+    extra_data_dict: dict = {}
 
     def signal(self, *args) -> pd.DataFrame:
         raise NotImplementedError

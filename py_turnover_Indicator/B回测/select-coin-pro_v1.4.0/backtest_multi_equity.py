@@ -1,9 +1,9 @@
 """
-邢不行™️ 策略分享会
-选币回测框架
+邢不行｜策略分享会
+选币策略框架𝓟𝓻𝓸
 
 版权所有 ©️ 邢不行
-微信: xbx6660
+微信: xbx1717
 
 本代码仅供个人学习使用，未经授权不得复制、修改或用于商业用途。
 
@@ -13,7 +13,7 @@ import warnings
 
 import pandas as pd
 
-from config_低价币多空策略 import swap_path, backtest_name
+from config import swap_path, backtest_name
 from core.backtest import find_best_params
 from core.evaluate import strategy_evaluate
 from core.figure import draw_equity_curve_plotly

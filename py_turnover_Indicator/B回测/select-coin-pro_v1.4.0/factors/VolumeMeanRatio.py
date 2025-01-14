@@ -1,9 +1,9 @@
 """
-邢不行™️ 策略分享会
-选币回测框架
+邢不行｜策略分享会
+选币策略框架𝓟𝓻𝓸
 
 版权所有 ©️ 邢不行
-微信: xbx6660
+微信: xbx1717
 
 本代码仅供个人学习使用，未经授权不得复制、修改或用于商业用途。
 
@@ -35,12 +35,29 @@ Author: 邢不行
 
 
 # 缩量因子
-def signal(candle_df, param, *args):
-    n = param  # 滚动周期数，用于涨跌幅计算
-    factor_name = args[0]  # 从额外参数中获取因子名称
+def signal(*args):
+    df = args[0]
+    n = args[1]
+    factor_name = args[2]
 
-    mean_1n = candle_df['volume'].rolling(n, min_periods=1).mean()
-    mean_2n = candle_df['volume'].rolling(2 * n, min_periods=1).mean()
-    candle_df[factor_name] = mean_1n / mean_2n
+    mean_1n = df['volume'].rolling(n, min_periods=1).mean()
+    mean_2n = df['volume'].rolling(2 * n, min_periods=1).mean()
+    df[factor_name] = mean_1n / mean_2n
 
-    return candle_df
+    return df
+
+
+def signal_multi_params(df, param_list) -> dict:
+    """
+    使用同因子多参数聚合计算，可以有效提升回测、实盘 cal_factor 的速度，
+    相对于 `signal` 大概提升3倍左右
+    :param df: k线数据的dataframe
+    :param param_list: 参数列表
+    """
+    ret = dict()
+    for param in param_list:
+        n = int(param)
+        mean_1n = df['volume'].rolling(n, min_periods=1).mean()
+        mean_2n = df['volume'].rolling(2 * n, min_periods=1).mean()
+        ret[str(param)] = mean_1n / mean_2n
+    return ret

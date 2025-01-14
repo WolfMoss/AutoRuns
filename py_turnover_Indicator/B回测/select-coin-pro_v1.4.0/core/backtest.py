@@ -1,9 +1,9 @@
 """
-邢不行™️ 策略分享会
-选币回测框架
+邢不行｜策略分享会
+选币策略框架𝓟𝓻𝓸
 
 版权所有 ©️ 邢不行
-微信: xbx6660
+微信: xbx1717
 
 本代码仅供个人学习使用，未经授权不得复制、修改或用于商业用途。
 
@@ -139,7 +139,7 @@ def step6_simulate_performance(conf: BacktestConfig, df_spot_ratio, df_swap_rati
     # 3. 可选：绘制初始回测的资金曲线图表
     if if_show_plot:
         # 绘制资金曲线并显示各项收益指标
-        show_plot_performance(conf, account_df, rtn, year_return, title_prefix='初始:')
+        show_plot_performance(conf, account_df, rtn, year_return, title_prefix='初始-')
 
     # 4. 如果配置中有择时信号，执行动态杠杆再择时模拟
     if has_timing_signal:
@@ -156,7 +156,7 @@ def step6_simulate_performance(conf: BacktestConfig, df_spot_ratio, df_swap_rati
                 account_df2,
                 rtn2,
                 year_return2,
-                title_prefix='再择时: ',
+                title_prefix='再择时-',
                 再择时前资金曲线=account_df['净值']
             )
 

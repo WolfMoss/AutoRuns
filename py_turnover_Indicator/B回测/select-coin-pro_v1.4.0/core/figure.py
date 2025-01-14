@@ -1,9 +1,9 @@
 """
-邢不行™️ 策略分享会
-选币回测框架
+邢不行｜策略分享会
+选币策略框架𝓟𝓻𝓸
 
 版权所有 ©️ 邢不行
-微信: xbx6660
+微信: xbx1717
 
 本代码仅供个人学习使用，未经授权不得复制、修改或用于商业用途。
 
@@ -22,11 +22,11 @@ from plotly import subplots
 from plotly.offline import plot
 from plotly.subplots import make_subplots
 
-from core.utils.path_kit import get_file_path, make_safe_path
+from core.utils.path_kit import get_file_path
 
 
 def show_without_plot_native_show(fig, save_path: Path):
-    save_path = make_safe_path(save_path).absolute()
+    save_path = save_path.absolute()
     print('⚠️ 因为新版pycharm默认开启sci-view功能，导致部分同学会在.show()的时候假死')
     print(f'因此我们会先保存HTML到: {save_path}, 然后调用默认浏览器打开')
     fig.write_html(save_path)
@@ -36,11 +36,11 @@ def show_without_plot_native_show(fig, save_path: Path):
     """
     system_name = platform.system()  # 检测操作系统
     if system_name == "Darwin":  # macOS
-        os.system(f'open "{save_path}"')
+        os.system(f'open "" "{save_path}"')
     elif system_name == "Windows":  # Windows
-        os.system(f'start "{save_path}"')
+        os.system(f'start "" "{save_path}"')
     elif system_name == "Linux":  # Linux
-        os.system(f'xdg-open "{save_path}"')
+        os.system(f'xdg-open "" "{save_path}"')
     else:
         # 如果不确定操作系统，尝试使用 webbrowser 模块
         webbrowser.open(save_path)

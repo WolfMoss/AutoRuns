@@ -1,9 +1,9 @@
 """
-邢不行™️ 策略分享会
-选币回测框架
+邢不行｜策略分享会
+选币策略框架𝓟𝓻𝓸
 
 版权所有 ©️ 邢不行
-微信: xbx6660
+微信: xbx1717
 
 本代码仅供个人学习使用，未经授权不得复制、修改或用于商业用途。
 
@@ -109,6 +109,14 @@ def calc_factors_by_candle(candle_df, conf: BacktestConfig, factor_col_name_list
         if len(factor_param_list) == 0:
             continue  # 当该因子不需要计算的时候直接返回
 
+        # 如果存在外部数据，则使用 data_bridge 中的加载函数 load 数据
+        if hasattr(factor, 'extra_data_dict') and factor.extra_data_dict:
+            from core.utils.functions import merge_data
+            for data_name in factor.extra_data_dict.keys():
+                extra_data_dict = merge_data(candle_df, data_name, factor.extra_data_dict[data_name])
+                for extra_data_name, extra_data_series in extra_data_dict.items():
+                    candle_df[extra_data_name] = extra_data_series.values
+
         # 根据因子内部的函数，来判断是否进行加速操作
         if hasattr(factor, 'signal_multi_params'):  # 如果存在 signal_multi_params ，使用最新的因子加速写法
             result_dict = factor.signal_multi_params(candle_df, factor_param_list)
@@ -145,19 +153,19 @@ def calc_factors_by_candle(candle_df, conf: BacktestConfig, factor_col_name_list
     first_candle_time = candle_df.iloc[0]['first_candle_time'] + pd.to_timedelta(f'{conf.min_kline_num}h')
 
     # 调整 symbol_spot 和 symbol_swap
-    for col in ['symbol_spot', 'symbol_swap']:
-        symbol_start_time = candle_df[
-            (candle_df[col] != '') & (candle_df[col].shift(1) == '') & (~candle_df[col].shift(1).isna())
-            ]['candle_begin_time']
-        if not symbol_start_time.empty:
-            condition = pd.Series(False, index=kline_with_factor_df.index)
-            for symbol_time in symbol_start_time:
-                _cond1 = kline_with_factor_df['candle_begin_time'] > symbol_time
-                _cond2 = kline_with_factor_df['candle_begin_time'] <= symbol_time + pd.to_timedelta(
-                    f'{conf.min_kline_num}h')
-                condition |= (_cond1 & _cond2)
-            kline_with_factor_df.loc[condition, col] = ''
-        kline_with_factor_df[col] = kline_with_factor_df[col].astype('category')
+    # for col in ['symbol_spot', 'symbol_swap']:
+    #     symbol_start_time = candle_df[
+    #         (candle_df[col] != '') & (candle_df[col].shift(1) == '') & (~candle_df[col].shift(1).isna())
+    #         ]['candle_begin_time']
+    #     if not symbol_start_time.empty:
+    #         condition = pd.Series(False, index=kline_with_factor_df.index)
+    #         for symbol_time in symbol_start_time:
+    #             _cond1 = kline_with_factor_df['candle_begin_time'] > symbol_time
+    #             _cond2 = kline_with_factor_df['candle_begin_time'] <= symbol_time + pd.to_timedelta(
+    #                 f'{conf.min_kline_num}h')
+    #             condition |= (_cond1 & _cond2)
+    #         kline_with_factor_df.loc[condition, col] = ''
+    #     kline_with_factor_df[col] = kline_with_factor_df[col].astype('category')
 
     # 需要对数据进行裁切
     kline_with_factor_df = kline_with_factor_df[kline_with_factor_df['candle_begin_time'] >= first_candle_time]

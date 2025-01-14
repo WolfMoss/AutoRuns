@@ -1,9 +1,9 @@
 """
-邢不行™️ 策略分享会
-选币回测框架
+邢不行｜策略分享会
+选币策略框架𝓟𝓻𝓸
 
 版权所有 ©️ 邢不行
-微信: xbx6660
+微信: xbx1717
 
 本代码仅供个人学习使用，未经授权不得复制、修改或用于商业用途。
 
@@ -21,7 +21,7 @@ import pandas as pd
 
 from config import stable_symbol, swap_path, spot_path
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 from core.model.backtest_config import BacktestConfig
 from core.utils.log_kit import logger
@@ -100,14 +100,19 @@ def align_spot_swap_mapping(df, column_name, n):
     :param n: 需要调整映射的周期数量
     :return: 调整好的k线数据
     """
+    # 创建新组标识列
+    df['is_new_group'] = (df[column_name].ne('') & df[column_name].shift().eq('')).astype(int)
+    # 累积求和生成组号
+    df['group'] = df['is_new_group'].cumsum()
+    # 将空字符串对应的组号设为NaN
+    df.loc[df['symbol_swap'].eq(''), 'group'] = np.nan
     # 通过 groupby 添加 grp_seq
-    df['grp_seq'] = df.groupby(column_name).cumcount()
-
+    df['grp_seq'] = df.groupby('group').cumcount()
     # 过滤条件并修改前 n 行
     df.loc[df['grp_seq'] < n, column_name] = ''
 
     # 删除辅助列
-    df.drop(columns=['grp_seq'], inplace=True)
+    df.drop(columns=['is_new_group', 'group', 'grp_seq'], inplace=True)
 
     return df
 
@@ -234,3 +239,81 @@ def save_performance_df_csv(conf: BacktestConfig, **kwargs):
     for name, df in kwargs.items():
         file_path = conf.get_result_folder() / f'{name}.csv'
         df.to_csv(file_path, encoding='utf-8-sig')
+
+
+# ===============================================================================================================
+# 额外数据源
+# ===============================================================================================================
+def merge_data(df: pd.DataFrame, data_name: str, save_cols: List[str], symbol: str = '') -> dict[str, pd.Series]:
+    """
+    导入数据，最终只返回带有同index的数据
+    :param df: （只读）原始的行情数据，主要是对齐数据用的
+    :param data_name: 数据中心中的数据英文名
+    :param save_cols: 需要保存的列
+    :param symbol: 币种
+    :return: 合并后的数据
+    """
+    import core.data_bridge as db
+    from config import data_source_dict
+
+    func_name, file_path = data_source_dict[data_name]
+
+    if hasattr(db, func_name):
+        extra_df: pd.DataFrame = getattr(db, func_name)(file_path, df, save_cols, symbol)
+    else:
+        print(f'⚠️ 未实现数据源：{data_name}')
+        return {col: pd.Series([np.nan] * len(df)) for col in save_cols}
+
+    if extra_df is None or extra_df.empty:
+        return {col: pd.Series([np.nan] * len(df)) for col in save_cols}
+
+    return {col: extra_df[col] for col in save_cols}
+
+
+def check_cfg():
+    """
+    检查 data_source_dict 配置
+    检查加载数据源函数是否存在
+    检查数据源文件是否存在
+    :return:
+    """
+    import core.data_bridge as db
+    from config import data_source_dict
+    for key, value in data_source_dict.items():
+        func_name, file_path = value
+        if not hasattr(db, func_name):
+            raise Exception(f"【{key}】加载数据源方法未实现：{func_name}")
+
+        if not (file_path and Path(file_path).exists()):
+            raise Exception(f"【{key}】数据源文件不存在：{file_path}")
+
+    print('✅ data_source_dict 配置检查通过')
+
+
+def check_factor(factors: list):
+    """
+    检查因子中的配置
+    检查是否有 extra_data_dict
+    检查 extra_data_dict 中的数据源是否在 data_source_dict 中
+
+    因子中的外部数据使用案例:
+
+    extra_data_dict = {
+        'coin-cap': ['circulating_supply']
+    }
+
+    :param factors:
+    :return:
+    """
+    from core.utils.factor_hub import FactorHub
+    for factor_name in factors:
+        factor = FactorHub.get_by_name(factor_name)  # 获取因子信息
+        if not (hasattr(factor, 'extra_data_dict') and factor.extra_data_dict):
+            raise Exception(f"未找到【{factor_name}】因子中 extra_data_dict 配置")
+
+        for data_source in factor.extra_data_dict.keys():
+            from config import data_source_dict
+            if data_source not in data_source_dict:
+                raise Exception(f"未找到 extra_data_dict 配置的数据源：{data_source}")
+
+    print(f'✅ {factors} 因子配置检查通过')

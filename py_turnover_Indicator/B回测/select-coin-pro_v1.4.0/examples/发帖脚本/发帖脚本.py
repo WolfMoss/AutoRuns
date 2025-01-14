@@ -2,7 +2,7 @@
 """
 中性策略框架 | 邢不行 | 2024分享会
 author: 邢不行
-微信: xbx6660
+微信: xbx1717
 """
 import os
 import pandas as pd

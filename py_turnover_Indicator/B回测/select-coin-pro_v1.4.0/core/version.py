@@ -1,9 +1,9 @@
 """
-邢不行™️ 策略分享会
-仓位管理实盘框架
+邢不行｜策略分享会
+选币策略框架𝓟𝓻𝓸
 
 版权所有 ©️ 邢不行
-微信: xbx6660
+微信: xbx1717
 
 本代码仅供个人学习使用，未经授权不得复制、修改或用于商业用途。
 
@@ -14,9 +14,9 @@ from pandas import show_versions
 
 from core.utils.log_kit import logger, divider
 
-sys_version = '1.4.0'
+sys_version = '1.5.0'
 sys_name = 'select-coin-pro'
-build_version = f'v{sys_version}.20241227'
+build_version = f'v{sys_version}.20250110'
 
 
 def version_prompt():

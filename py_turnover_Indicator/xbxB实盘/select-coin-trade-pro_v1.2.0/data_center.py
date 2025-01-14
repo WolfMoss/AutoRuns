@@ -91,11 +91,11 @@ def run_loop(run_time=None):
     # 0. 调试相关配置区域
     # ====================================================================================================
     if is_debug:  # 调试模式，不进行sleep，直接继续往后运行
-        # run_time = sleep_until_run_time('5m', if_sleep=True, cheat_seconds=0)  # 每小时运行
+        run_time = sleep_until_run_time('5m', if_sleep=True, cheat_seconds=0)  # 每小时运行
         # 以下代码可以测试的时候使用(UTC0点 日K才走完，国内时间对应是 早上8点)
         # run_time = datetime.strptime('2024-07-29 10:05:00', "%Y-%m-%d %H:%M:%S")
         # 测试当前小时的代码
-        run_time = datetime.now().replace(minute=0, second=0, microsecond=0)
+        #run_time = datetime.now().replace(minute=0, second=0, microsecond=0)
     else:
         random_time = 0
         run_time = sleep_until_run_time('5m', if_sleep=True, cheat_seconds=random_time)  # 每小时运行

@@ -19,15 +19,6 @@
             "out_file": "/home/ubuntu/select-coin-trade-pro_v1.2.0/logs/sctp-data_center.out.log"
         },
         {
-            "name": "monitor",
-            "script": "/home/ubuntu/select-coin-trade-pro_v1.2.0/monitor.py",
-            "exec_interpreter": "python",
-            "merge_logs": false,
-            "watch": false,
-            "error_file": "/home/ubuntu/select-coin-trade-pro_v1.2.0/logs/sctp-monitor.error.log",
-            "out_file": "/home/ubuntu/select-coin-trade-pro_v1.2.0/logs/sctp-monitor.out.log"
-        },
-        {
             "name": "delist",
             "script": "/home/ubuntu/select-coin-trade-pro_v1.2.0/delist.py",
             "exec_interpreter": "python",

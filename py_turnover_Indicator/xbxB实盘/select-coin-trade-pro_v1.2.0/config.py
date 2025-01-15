@@ -207,7 +207,7 @@ api_key = '1L9Z9IL0ELWATTBOIPCF2GD5MD4D235T'
 uuid = 'e1388f20d6a43ee4838520e8ab0f61c1'
 
 # debug模式。模拟运行程序，不会去下单
-is_debug = True
+is_debug = False
 
 # 获取当前服务器时区，距离UTC 0点的偏差
 utc_offset = int(time.localtime().tm_gmtoff / 60 / 60)  # 如果服务器在上海，那么utc_offset=8

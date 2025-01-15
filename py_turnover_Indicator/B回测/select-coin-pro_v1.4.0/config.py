@@ -22,14 +22,14 @@ from core.utils.path_kit import get_folder_path
 # 使用官方准备的预处理数据，专门用于本框架回测使用，大幅提高速度
 # 现货和合约1小时预处理数据（pkl格式）：https://www.quantclass.cn/data/coin/coin-binance-spot-swap-preprocess-pkl-1h
 # 格式可以是：pre_data_path = r'D:\data\coin-binance-spot-swap-preprocess-pkl-1h'
-pre_data_path = r'E:\quantclass\treadedatas\coin-binance-spot-swap-preprocess-pkl-1h'
+pre_data_path = r'D:\dowms\coin-binance-spot-swap-preprocess-pkl-1h-2024-12-28'
 
 # ** 额外数据 **
 # 当且仅当用到额外数据的因子时候，该配置才需要配置，且自动生效
 data_source_dict = {
     # 数据源的标签: ('加载数据的函数名', '数据存储的绝对路径')
     # 说明：数据源的标签,需要与因子文件中的 extra_data_dict 中的 key 保持一致，数据存储的路径需要表达清楚
-    "coin-cap": ('load_coin_cap', r'E:\quantclass\treadedatas\coin-cap',)
+    "coin-cap": ('load_coin_cap', r'D:\dowms\coin-cap',)
 }
 
 # ====================================================================================================
@@ -50,7 +50,7 @@ strategy_list = [
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
                 "strategy": "Strategy_大学生",
-                "offset_list": [16],
+                "offset_list": [9],
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
@@ -71,7 +71,7 @@ strategy_list = [
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
                 "strategy": "Strategy_大学生",
-                "offset_list": [19],
+                "offset_list": [16],
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
@@ -92,7 +92,7 @@ strategy_list = [
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
                 "strategy": "Strategy_大学生",
-                "offset_list": [9],
+                "offset_list": [3],
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
@@ -106,14 +106,14 @@ strategy_list = [
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 12, 'pct:<0.8')
+                    ('ZfStd', 92, 'pct:<0.8')
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
                 "strategy": "Strategy_大学生",
-                "offset_list": [23],
+                "offset_list": [5],
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
@@ -127,7 +127,7 @@ strategy_list = [
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 650, 'pct:<0.8')
+                    ('ZfStd', 500, 'pct:<0.8')
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },

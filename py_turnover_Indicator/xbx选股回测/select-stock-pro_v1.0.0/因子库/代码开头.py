@@ -39,11 +39,12 @@ def add_factor(df: pd.DataFrame, param=None, **kwargs) -> pd.DataFrame:
     # ======================== 参数处理 ===========================
     # 从kwargs中提取因子列的名称，这里使用'col_name'来标识因子列名称
     col_name = kwargs['col_name']
-    months = list(param)
+    codekaitou = param
 
     # ======================== 计算因子 ===========================
     # 我们这里的市值因子使用总市值的数值
     df[col_name] = 0
-    #df.loc[(df['交易日期'].dt.month.isin(months)) & (df['交易日期'].dt.day < 20), col_name] = 1
-    df.loc[df['交易日期'].dt.month.isin(months), col_name] = 1
+    #df.loc[df['股票代码'].str.startswith(codekaitou), col_name] = 1
+    df.loc[df['股票代码'].apply(lambda x: any(x.startswith(code) for code in codekaitou)), col_name] = 1
+
     return df[[col_name]]

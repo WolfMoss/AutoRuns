@@ -20,6 +20,7 @@ class FactorInterface:
     """
     # 财务因子列：此列表用于存储财务因子相关的列名称
     fin_cols = []  # 财务因子列，配置后系统会自动加载对应的财务数据
+    extra_data = {}  # 额外数据
 
     @staticmethod
     def add_factor(df: pd.DataFrame, param=None, **kwargs) -> pd.DataFrame:

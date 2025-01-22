@@ -12,7 +12,7 @@ Author: 邢不行
 import time
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import Union
+from typing import Union, Callable, List
 
 import numpy as np
 import pandas as pd
@@ -24,9 +24,9 @@ from core.model.backtest_config import BacktestConfig
 from core.utils.log_kit import logger
 
 # 定义股票数据所需的列
-STOCK_DATA_COLS = [
+DATA_COLS = [
     '股票代码', '股票名称', '交易日期', '开盘价', '最高价', '最低价', '收盘价', '前收盘价', '成交量', '成交额',
-    '流通市值', '总市值', '新版申万一级行业名称', '09:35收盘价', '09:45收盘价', '09:55收盘价',
+    '流通市值', '总市值', '09:35收盘价', '09:45收盘价', '09:55收盘价',
 ]
 
 
@@ -36,6 +36,12 @@ STOCK_DATA_COLS = [
 def prepare_data(conf: BacktestConfig, boost: bool = True):
     logger.info(f'读取数据中心数据...')
     start_time = time.time()  # 记录数据准备开始时间
+
+    # 0. 准备工作
+    if conf.ov_cols:
+        logger.debug(f'🛂 检测到因子需要额外全息字段：{conf.ov_cols}')
+    else:
+        logger.debug('🛂 没有因子需要额外的全息字段')
 
     # 1. 获取股票代码列表
     stock_code_list = []  # 用于存储股票代码
@@ -58,7 +64,7 @@ def prepare_data(conf: BacktestConfig, boost: bool = True):
             futures = []
             for code in stock_code_list:
                 file_path = conf.stock_data_path / f'{code}.csv'
-                futures.append(executor.submit(pre_process, file_path, index_data))
+                futures.append(executor.submit(pre_process, file_path, index_data, conf.ov_cols))
 
             for future in tqdm(futures, desc='📦 处理数据', total=len(futures)):
                 df = future.result()
@@ -68,7 +74,7 @@ def prepare_data(conf: BacktestConfig, boost: bool = True):
     else:
         for code in tqdm(stock_code_list, desc='📦 处理数据', total=len(stock_code_list)):
             file_path = conf.stock_data_path / f'{code}.csv'
-            df = pre_process(file_path, index_data)
+            df = pre_process(file_path, index_data, conf.ov_cols)
             if not df.empty:
                 all_candle_data_dict[code] = df
 
@@ -87,7 +93,7 @@ def prepare_data(conf: BacktestConfig, boost: bool = True):
     logger.ok(f'数据准备耗时：{(time.time() - start_time):.2f} 秒')
 
 
-def pre_process(stock_file_path: Union[str, Path], index_data: pd.DataFrame) -> pd.DataFrame:
+def pre_process(stock_file_path: Union[str, Path], index_data: pd.DataFrame, ov_cols) -> pd.DataFrame:
     """
     对股票数据进行预处理，包括合并指数数据和计算未来交易日状态。
 
@@ -99,7 +105,7 @@ def pre_process(stock_file_path: Union[str, Path], index_data: pd.DataFrame) -> 
     df (DataFrame): 预处理后的数据
     """
     # 计算涨跌幅、换手率等关键指标
-    df = pd.read_csv(stock_file_path, encoding='gbk', skiprows=1, parse_dates=['交易日期'], usecols=STOCK_DATA_COLS)
+    df = pd.read_csv(stock_file_path, encoding='gbk', skiprows=1, parse_dates=['交易日期'], usecols=DATA_COLS + ov_cols)
     pct_change = df['收盘价'] / df['前收盘价'] - 1
     turnover_rate = df['成交额'] / df['流通市值']
     trading_days = df.index.astype('int') + 1
@@ -123,7 +129,7 @@ def pre_process(stock_file_path: Union[str, Path], index_data: pd.DataFrame) -> 
     # 股票退市时间小于指数开始时间，就会出现空值
     if df.empty:
         # 如果出现这种情况，返回空的DataFrame用于后续操作
-        return pd.DataFrame(columns=STOCK_DATA_COLS)
+        return pd.DataFrame(columns=DATA_COLS)
 
     # 计算开盘买入涨跌幅和未来交易日状态
     df = df.assign(
@@ -142,7 +148,7 @@ def pre_process(stock_file_path: Union[str, Path], index_data: pd.DataFrame) -> 
     # 清理退市数据，保留有效交易数据
     if ('退' in df['股票名称'].iloc[-1]) or ('S' in df['股票名称'].iloc[-1]):
         if df['成交额'].iloc[-1] == 0 and np.all(df['成交额'] == 0):
-            return pd.DataFrame(columns=STOCK_DATA_COLS)
+            return pd.DataFrame(columns=DATA_COLS)
         # @马超 同学于2024年11月20日提供退市逻辑优化处理。
         # 解决因为起始时间太靠前，导致数据可能为空报错的问题，加入了empty情况的容错
         df_tmp = df[(df['成交额'] != 0) & (df['成交额'].shift(-1) == 0)]
@@ -152,7 +158,7 @@ def pre_process(stock_file_path: Union[str, Path], index_data: pd.DataFrame) -> 
             end_date = df_tmp.iloc[-1]['交易日期']
         df = df[df['交易日期'] <= end_date]
 
-    return df if not df.empty else pd.DataFrame(columns=STOCK_DATA_COLS)
+    return df if not df.empty else pd.DataFrame(columns=DATA_COLS)
 
 
 def make_market_pivot(market_dict):
@@ -191,13 +197,53 @@ def make_market_pivot(market_dict):
 # ===============================================================================================================
 # 额外数据源
 # ===============================================================================================================
-def merge_data(df: pd.DataFrame, data_name: str) -> dict[str, pd.Series]:
+def merge_extra_data(df: pd.DataFrame, data_name: str, save_cols: List[str]) -> pd.DataFrame:
     """
     导入数据，最终只返回带有同index的数据
     :param df: （只读）原始的行情数据，主要是对齐数据用的
     :param data_name: 数据中心中的数据英文名
+    :param save_cols: 需要保存的列
+    :param symbol: 币种
     :return: 合并后的数据
     """
-    print(f'⚠️ 未实现数据源：{data_name}')
-    print(df)
-    return {}
+    import core.data_bridge as db
+    data_source_dict = {**db.presets}
+
+    func_name, file_path = data_source_dict[data_name]
+
+    if isinstance(func_name, Callable):
+        func = func_name
+    elif hasattr(db, func_name):
+        func = getattr(db, func_name)
+    else:
+        print(f'⚠️ 未实现数据源：{data_name}')
+        return df.assign(**{col: np.nan for col in save_cols})
+    try:
+        extra_df = func(file_path, df, save_cols)
+    except Exception as e:
+        raise e
+
+    if extra_df is None or extra_df.empty:
+        return df.assign(**{col: np.nan for col in save_cols})
+
+    return extra_df
+
+
+def check_extra_data(data_name: str):
+    """
+    数据预检查
+    """
+    import core.data_bridge as db
+    data_source_dict = {**db.presets}
+
+    func_name, file_path = data_source_dict[data_name]
+
+    file_path = Path(file_path)
+    if not file_path.exists():
+        return False, f'文件不存在：{file_path}，请在数据中心订阅或手动下载后重试'
+
+    if isinstance(func_name, Callable):
+        return True, 'OK'
+
+    fail_msg = f'⚠️ 未实现数据源：{data_name}'
+    return hasattr(db, func_name), fail_msg

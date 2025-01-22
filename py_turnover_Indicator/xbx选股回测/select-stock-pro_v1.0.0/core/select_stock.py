@@ -18,6 +18,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from config import n_jobs, runtime_folder
+from core.data_center import check_extra_data, merge_extra_data
 from core.equity import calc_equity
 from core.fin_essentials import merge_with_finance_data
 from core.model.backtest_config import BacktestConfig
@@ -32,7 +33,7 @@ FACTOR_COLS = [
     '下日_开盘涨停', '下日_是否ST', '下日_是否交易', '下日_是否退市'
 ]
 KLINE_COLS = ['交易日期', '股票代码', '股票名称']
-# 计算完选币之后，保留的字段
+# 计算完选股之后，保留的字段
 RES_COLS = [*KLINE_COLS, '策略', '持仓周期', '换仓时间', '目标资金占比']
 
 
@@ -89,6 +90,11 @@ def process_by_stock(conf: BacktestConfig, stock_code: str, candle_df: pd.DataFr
     else:
         fin_data = None
 
+    if conf.extra_data:
+        # 个股数据与其他数据合并
+        for data_name in conf.extra_data.keys():
+            candle_df = merge_extra_data(candle_df, data_name, conf.extra_data[data_name])
+
     # 计算因子，并且获得新的因子列的周期转换规则
     factor_df = cal_strategy_factors(conf, stock_code, candle_df, fin_data=fin_data)
 
@@ -119,6 +125,16 @@ def calculate_factors(conf: BacktestConfig, boost: bool = True):
         logger.debug(f'ℹ️ 检测到财务因子：{conf.fin_cols}')
     else:
         logger.debug('ℹ️ 检测到没有财务因子')
+
+    if len(conf.extra_data.keys()) > 0:
+        logger.debug(f'🔍 检测到外部数据：{list(conf.extra_data.keys())}')
+        for data_name in conf.extra_data.keys():
+            is_ok, msg = check_extra_data(data_name)
+            if not is_ok:
+                logger.error(f'外部数据检测失败：{msg}')
+                exit(2)
+    else:
+        logger.debug('🔍 检测到没有外部数据')
 
     logger.debug('💿 读取股票K线数据...')
     candle_df_dict: Dict[str, pd.DataFrame] = pd.read_pickle(runtime_folder / '股票预处理数据.pkl')

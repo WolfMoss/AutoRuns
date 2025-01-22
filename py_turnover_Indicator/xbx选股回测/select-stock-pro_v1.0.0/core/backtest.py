@@ -41,8 +41,8 @@ pass
 # 1. 准备工作
 # 2. 读取数据
 # 3. 计算因子
-# 4. 选币
-# 5. 整理选币数据
+# 4. 选股
+# 5. 整理选股数据
 # 6. 添加下一个每一个周期需要卖出的币的信息
 # 7. 计算资金曲线
 # ====================================================================================================
@@ -85,7 +85,7 @@ def run_backtest(conf: BacktestConfig):
     divider('条件选股', '-')
     s_time = time.time()
     select_stocks(conf)
-    select_results = concat_select_results(conf)  # 合并多个策略的选币结果
+    select_results = concat_select_results(conf)  # 合并多个策略的选股结果
 
     logger.debug(f'💾 选股结果数据大小：{select_results.memory_usage(deep=True).sum() / 1024 / 1024:.4f} MB')
     logger.ok(f'选股完成，总耗时：{time.time() - s_time:.3f}秒')

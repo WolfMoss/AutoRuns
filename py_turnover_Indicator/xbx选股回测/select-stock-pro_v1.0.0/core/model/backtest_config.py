@@ -9,6 +9,7 @@
 
 Author: 邢不行
 """
+from collections import defaultdict
 from datetime import datetime
 from itertools import product
 from pathlib import Path
@@ -66,6 +67,8 @@ class BacktestConfig:
         self.hold_period_name_list: List[str] = []  # 持仓周期列表
 
         self.fin_cols: list = []  # 缓存财务因子列
+        self.ov_cols: list = []  # 缓存全息数据的额外字段
+        self.extra_data: dict = {}  # 缓存额外数据
 
         self.agg_rules = {}  # 缓存聚合规则
         self.report: pd.DataFrame = pd.DataFrame()  # 回测报告
@@ -90,12 +93,16 @@ class BacktestConfig:
         info_list = [
             '=' * 96,
             f"""🔵 {self.name}
-- 回测周期：{self.start_date} -> {self.end_date}
-- 初始资金：￥{self.initial_cash:,.2f}
-- 费率设置：手续费{self.c_rate * 100:,.2f}%, 印花税{self.t_rate * 100:,.2f}%
-- 数据中心路径："{self.data_center_path}"
-- 回测结果路径："{self.get_result_folder()}"
-- 包含子策略：{'、'.join(self.strategy_name_list)}"""]
+→ 回测周期：{self.start_date} -> {self.end_date}
+→ 初始资金：￥{self.initial_cash:,.2f}
+→ 费率设置：手续费{self.c_rate * 100:,.2f}%, 印花税{self.t_rate * 100:,.2f}%
+→ 数据设置:
+  - 财务数据: {self.fin_cols if self.fin_cols else '∅ 否'}
+  - 全息数据: {self.ov_cols if self.ov_cols else '∅ 否'}
+  - 外部数据: {list(self.extra_data.keys()) if self.extra_data else '∅ 否'}
+→ 数据中心路径："{self.data_center_path}"
+→ 回测结果路径："{self.get_result_folder()}"
+→ 包含子策略：{'、'.join(self.strategy_name_list)}"""]
 
         for strategy in self.strategy_list:
             info_list.append(f'  {strategy}')
@@ -110,8 +117,9 @@ class BacktestConfig:
     # noinspection PyUnusedLocal
     def load_strategy_config(self, strategy_list: Union[list, tuple], timing_config=None):
         self.strategy_list_raw = strategy_list
-        # 所有策略中的权重
-        all_cap_weight = sum(item.get('cap_weight', 1) for item in strategy_list)
+        # 所有策略中的权重，当且仅当超过1的时候，才会做归一化处理
+        all_cap_weight = max(sum(item.get('cap_weight', 1) for item in strategy_list), 1)
+        merged_dict = defaultdict(list)  # 合并额外数据引用
 
         for index, stg_dict in enumerate(strategy_list):
             strategy_name = stg_dict['name']
@@ -127,20 +135,26 @@ class BacktestConfig:
             self.factor_col_name_list += strategy.factor_columns
 
             # 针对当前策略的因子信息，整理之后的列名信息，并且缓存到全局
-            fin_cols = set()
             for factor_config in strategy.all_factors:
                 # 添加到并行计算的缓存中
                 if factor_config.name not in self.factor_params_dict:
                     self.factor_params_dict[factor_config.name] = set()
                 self.factor_params_dict[factor_config.name].add(factor_config.param)
 
-                new_cols = FactorHub.get_by_name(factor_config.name).fin_cols
-                fin_cols = fin_cols.union(set(new_cols))
+                factor = FactorHub.get_by_name(factor_config.name)
 
-            self.fin_cols += list(fin_cols)
+                # 1. 合并财务因子
+                self.fin_cols += getattr(factor, 'fin_cols', [])
+                # 2. 合并全息数据的额外字段
+                self.ov_cols += getattr(factor, 'ov_cols', [])
+                # 3. 合并额外数据
+                for k, v in getattr(factor, 'extra_data', {}).items():
+                    merged_dict[k].extend(v)
 
         # 对列名进行去重
         self.fin_cols = list(set(self.fin_cols))
+        self.ov_cols = list(set(self.ov_cols))
+        self.extra_data = {key: list(set(value)) for key, value in merged_dict.items()}
         self.hold_period_name_list = list(set(self.hold_period_name_list))
         self.factor_col_name_list = list(set(self.factor_col_name_list))
 

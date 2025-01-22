@@ -51,7 +51,7 @@ def filter_series_by_range(series, range_str):
 
 
 def get_col_name(factor_name, factor_param):
-    if isinstance(factor_param,(tuple, list)):
+    if isinstance(factor_param, (tuple, list)):
         factor_param_str = '(' + ','.join(map(str, factor_param)) + ')'
     else:
         factor_param_str = str(factor_param)
@@ -104,28 +104,36 @@ class FactorConfig:
     name: str = 'Bias'  # 选股因子名称
     is_sort_asc: bool = True  # 是否正排序
     param: Union[tuple, HashableDict, str, int, float, bool, None] = 3  # 选股因子参数
-    weight: float = 1  # 选股因子权重
+    args: Union[tuple, HashableDict, str, int, float, bool, None] = 1  # 默认是选股因子权重，也可以是计算因子时候的参数
 
     @classmethod
-    def parse_config_list(cls, config_list: List[tuple]):
-        all_long_factor_weight = sum([factor[3] for factor in config_list])
-        factor_list = []
-        for factor_name, is_sort_asc, param, weight in config_list:
-            new_weight = weight / all_long_factor_weight
+    def parse_list(cls, factor_list: List[tuple], not_weight=False):
+        all_long_factor_weight = 0 if not_weight else max(sum([factor[3] for factor in factor_list]), 1)  # 小于1的时候不做归一化
+
+        parsed_factor_list = []
+        for factor_name, is_sort_asc, param, args in factor_list:
+            if not_weight:
+                p_args = parse_param(args)
+            else:
+                p_args = args / all_long_factor_weight
             # param的类型需要转换为hashable的状态
-            param = parse_param(param)
-            factor_list.append(cls(name=factor_name, is_sort_asc=is_sort_asc, param=param, weight=new_weight))
-        return factor_list
+            p_param = parse_param(param)
+            parsed_factor_list.append(cls(name=factor_name, is_sort_asc=is_sort_asc, param=p_param, args=p_args))
+        return parsed_factor_list
 
     @cached_property
     def col_name(self):
         return get_col_name(self.name, self.param)
 
+    @property
+    def weight(self):
+        return float(self.args)  # 当使用自定义函数的时候，可以通过这个别名变量，来获取对应的数值
+
     def __repr__(self):
-        return f'{self.col_name}{"↑" if self.is_sort_asc else "↓"}#权重:{self.weight}'
+        return f'{self.col_name}{"↑" if self.is_sort_asc else "↓"}#{self.args}'
 
     def to_tuple(self):
-        return self.name, self.is_sort_asc, self.param, self.weight
+        return self.name, self.is_sort_asc, self.param, self.args
 
 
 def calc_factor_common(df, factor_list: List[FactorConfig]):
@@ -201,8 +209,7 @@ def filter_common(df, filter_list):
     condition = pd.Series(True, index=df.index)
 
     for filter_config in filter_list:
-        #col_name = f'{filter_config.name}_{str(filter_config.param)}'
-        col_name = get_col_name(filter_config.name, filter_config.param)
+        col_name = filter_config.col_name
         match filter_config.method.how:
             case 'rank':
                 rank = df.groupby('交易日期')[col_name].rank(ascending=filter_config.is_sort_asc, pct=False)
@@ -313,7 +320,8 @@ class StrategyConfig:
 
     @classmethod
     def init(cls, index: int, **config):
-        config['factor_list'] = FactorConfig.parse_config_list(config.get('factor_list', []))
+        is_custom_select = 'calc_select_factor' in config['funcs']
+        config['factor_list'] = FactorConfig.parse_list(config.get('factor_list', []), is_custom_select)
         config['filter_list'] = [FilterFactorConfig.init(filter_config) for filter_config in
                                  config.get('filter_list', [])]
         stg_conf = cls(**config)

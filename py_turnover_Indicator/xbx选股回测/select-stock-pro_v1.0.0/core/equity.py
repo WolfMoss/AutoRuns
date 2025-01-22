@@ -80,7 +80,19 @@ def calc_equity(conf: BacktestConfig,
                 period_ratio_df: dict[tuple, pd.DataFrame],
                 symbols: list[str],
                 select_result: pd.DataFrame,
+                leverage: float | pd.Series = None,
                 show_plot=True):
+    """
+    模拟投资组合的表现，生成资金曲线以跟踪组合收益变化。
+    :param conf: 回测配置
+    :param pivot_dict_stock: 原始数据
+    :param period_ratio_df: 持仓周期权重
+    :param symbols: 股票代码
+    :param select_result: 选股结果
+    :param leverage: 杠杆
+    :param show_plot: 是否显示回测结果图表
+    :return:
+    """
     symbol_types = [get_symbol_type(sym) for sym in symbols]
     if any(x == BSE_MAIN for x in symbol_types):
         raise ValueError(f'BSE not supported')  # No Beijing stocks
@@ -92,14 +104,17 @@ def calc_equity(conf: BacktestConfig,
     # 读取行情
     market = get_stock_market(pivot_dict_stock, trading_dates, symbols, symbol_types)
 
-    if conf.total_cap_usage < 1:
-        logger.warning(f'总资本用量非满仓状态，将使用初始资金的{conf.total_cap_usage * 100:.2f}%')
-        initial_cash = conf.initial_cash * conf.total_cap_usage
+    if leverage is None:
+        leverage = conf.total_cap_usage
+
+    if isinstance(leverage, pd.Series):
+        leverages = leverage.to_numpy(dtype=np.float64)
     else:
-        initial_cash = conf.initial_cash
+        leverages = np.full(len(market.candle_begin_ts), leverage, dtype=np.float64)
+
     # 开始回测
     params = SimuParams(
-        init_cash=initial_cash,  # 初始资金
+        init_cash=conf.initial_cash,  # 初始资金
         stamp_tax_rate=conf.t_rate,  # 印花税率
         commission_rate=conf.c_rate,  # 券商佣金费率
     )
@@ -116,7 +131,7 @@ def calc_equity(conf: BacktestConfig,
 
     s_time = time.perf_counter()
     logger.debug('🎯 开始模拟交易...')
-    cashes, pos_values, stamp_taxes, commissions = start_simulation(market, params, adj_ratios, pos_calc)
+    cashes, pos_values, stamp_taxes, commissions = start_simulation(market, params, adj_ratios, leverages, pos_calc)
 
     logger.ok(f'完成模拟交易，花费时间: {time.perf_counter() - s_time:.3f}秒')
     account_df = pd.DataFrame({
@@ -124,17 +139,17 @@ def calc_equity(conf: BacktestConfig,
         '账户可用资金': cashes,
         '持仓市值': pos_values,
         '印花税': stamp_taxes,
-        '券商佣金': commissions
+        '券商佣金': commissions,
     }).reset_index(drop=True)
 
     account_df['总资产'] = account_df['账户可用资金'] + account_df['持仓市值']
     account_df['净值'] = account_df['总资产'] / conf.initial_cash
-    account_df['手续费'] = account_df['印花税'] + account_df['券商佣金']
-    account_df['涨跌幅'] = account_df['净值'].pct_change()
-    account_df = account_df.assign(总资产=account_df['账户可用资金'] + account_df['持仓市值'],
-                                   净值=account_df['总资产'] / conf.initial_cash,
-                                   手续费=account_df['印花税'] + account_df['券商佣金'],
-                                   涨跌幅=account_df['净值'].pct_change())
+
+    account_df = account_df.assign(
+        手续费=account_df['印花税'] + account_df['券商佣金'],
+        涨跌幅=account_df['净值'].pct_change(),
+        杠杆=leverages,
+        实际杠杆=account_df['持仓市值'] / account_df['总资产'])
 
     account_df.to_csv(conf.get_result_folder() / '资金曲线.csv', encoding='utf-8-sig')
 
@@ -195,7 +210,7 @@ def calc_equity(conf: BacktestConfig,
 
 
 @nb.njit(boundscheck=True)
-def start_simulation(market, simu_params, adj_ratios, pos_calc):
+def start_simulation(market, simu_params, adj_ratios, leverages, pos_calc):
     """
     模拟股票交易的函数，逐 K 线模拟交易过程，计算账户资金、仓位价值、印花税和佣金等。
 
@@ -203,6 +218,7 @@ def start_simulation(market, simu_params, adj_ratios, pos_calc):
     - market: StockMarketData 类型，包含市场数据（如 K 线时间戳、价格等）。
     - simu_params: SimuParams 类型，包含模拟参数（如初始资金、佣金率、印花税率等）。
     - adj_ratios: AdjustRatios 类型，包含策略调仓信息（如调仓日期、目标权重、买卖价格索引等）。
+    - leverages: np.array 类型，包含动态杠杆
     - pos_calc: 仓位计算函数，用于计算目标买入仓位。
 
     返回:
@@ -320,6 +336,7 @@ def start_simulation(market, simu_params, adj_ratios, pos_calc):
 
             # 计算账户总权益（可用资金 + 所有模拟器的仓位价值）
             total_equity = available_cash + sum([sim.get_pos_value() for sim in sims])
+            total_equity *= leverages[idx_bar]
 
             # 处理需要买入的策略
             for idx_ratio, (sim, idx_adj, ratios) in enumerate(zip(sims, adj_idxes, buy_ratios)):

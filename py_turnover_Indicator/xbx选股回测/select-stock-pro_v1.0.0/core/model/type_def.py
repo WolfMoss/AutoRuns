@@ -137,6 +137,7 @@ class AdjustRatios:
         # 设置卖出价格索引和买入价格索引
         self.sp_idx, self.bp_idx = reb_time
 
+
 def get_symbol_type(symbol: str) -> int:
     """
     根据股票代码判断其所属的交易所类型

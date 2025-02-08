@@ -54,11 +54,11 @@ strategy_list = [
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 1,
+                'cap_weight': 10,
                 'long_cap_weight': 1,
                 'short_cap_weight': 0,
                 'long_select_coin_num': 0.1,
-                'short_select_coin_num': 0,
+                'short_select_coin_num': 0.1,
                 # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
                 "factor_list": [
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
@@ -75,11 +75,11 @@ strategy_list = [
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 1,
+                'cap_weight': 10,
                 'long_cap_weight': 1,
                 'short_cap_weight': 0,
                 'long_select_coin_num': 0.1,
-                'short_select_coin_num': 0,
+                'short_select_coin_num': 0.1,
                 # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
                 "factor_list": [
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
@@ -89,48 +89,73 @@ strategy_list = [
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
+            # {
+            #     # 策略名称。与strategy目录中的策略文件名保持一致。
+            #     "strategy": "Strategy_大学生",
+            #     "offset_list": [3],
+            #     "hold_period": "24H",
+            #     "is_use_spot": True,
+            #     # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
+            #     'cap_weight': 5,
+            #     'long_cap_weight': 1,
+            #     'short_cap_weight': 0,
+            #     'long_select_coin_num': (0.1, 0.2),
+            #     'short_select_coin_num': (0.1, 0.2),
+            #     # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
+            #     "factor_list": [
+            #         ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
+            #     ],
+            #     "filter_list": [
+            #         ('ZfStd', 92, 'pct:<0.8')
+            #     ],
+            #     "use_custom_func": False  # 使用系统内置因子计算、过滤函数
+            # },
+            # {
+            #     # 策略名称。与strategy目录中的策略文件名保持一致。
+            #     "strategy": "Strategy_大学生",
+            #     "offset_list": [5],
+            #     "hold_period": "24H",
+            #     "is_use_spot": True,
+            #     # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
+            #     'cap_weight': 5,
+            #     'long_cap_weight': 1,
+            #     'short_cap_weight': 1,
+            #     'long_select_coin_num': (0.1, 0.2),
+            #     'short_select_coin_num': (0.1, 0.2),
+            #     # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
+            #     "factor_list": [
+            #         ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
+            #     ],
+            #     "filter_list": [
+            #         ('ZfStd', 500, 'pct:<0.8')
+            #     ],
+            #     "use_custom_func": False  # 使用系统内置因子计算、过滤函数
+            # },
+            # === 1.大学生纯多策略-------------------
+
+            # === 2.大学生中性策略 ++++++++++++++++++++++++++++++++
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
                 "strategy": "Strategy_大学生",
-                "offset_list": [3],
+                "offset_list": [16],
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 1,
+                'cap_weight': 80,
                 'long_cap_weight': 1,
-                'short_cap_weight': 0,
-                'long_select_coin_num': (0.1, 0.2),
-                'short_select_coin_num': 0,
+                'short_cap_weight': 1,
+                'long_select_coin_num': 0.1,
+                'short_select_coin_num': 0.1,
                 # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
                 "factor_list": [
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 92, 'pct:<0.8')
+                    ('ZfStd', 1824, 'pct:<0.8')
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
-            },
-            {
-                # 策略名称。与strategy目录中的策略文件名保持一致。
-                "strategy": "Strategy_大学生",
-                "offset_list": [5],
-                "hold_period": "24H",
-                "is_use_spot": True,
-                # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 1,
-                'long_cap_weight': 1,
-                'short_cap_weight': 0,
-                'long_select_coin_num': (0.1, 0.2),
-                'short_select_coin_num': 0,
-                # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
-                "factor_list": [
-                    ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
-                ],
-                "filter_list": [
-                    ('ZfStd', 500, 'pct:<0.8')
-                ],
-                "use_custom_func": False  # 使用系统内置因子计算、过滤函数
-            },
+            }
+            # === 2.大学生中性策略 --------------------------------
         ]
 
 min_kline_num = 168  # 最少上市多久，不满该K线根数的币剔除，即剔除刚刚上市的新币。168：标识168个小时，即：7*24
@@ -160,7 +185,7 @@ avg_price_col = 'avg_price_1m'  # 用于模拟计算的平均价，预处理数�
 job_num = max(os.cpu_count() - 6, 1)  # 回测并行数量
 
 # ==== factor_col_limit 介绍 ====
-factor_col_limit = 32  # 内存优化选项，一次性计算多少列因子。64是 16GB内存 电脑的典型值
+factor_col_limit = 64  # 内存优化选项，一次性计算多少列因子。64是 16GB内存 电脑的典型值
 # - 数字越大，计算速度越快，但同时内存占用也会增加。
 # - 该数字是在 "因子数量 * 参数数量" 的基础上进行优化的。
 #   - 例如，当你遍历 200 个因子，每个因子有 10 个参数，总共生成 2000 列因子。

@@ -47,7 +47,7 @@ from core.utils.path_kit import get_folder_path
 # 交易黑名单与白名单功能。开启选币黑名单与白名单
 # ====================================================================================================
 
-# ++++ 大学生中性 ++++
+# ++++ 多账户多策略 ++++
 # 多账户功能：一个程序可以同时在多个账户下运行策略。同时兼容不同的账户类型。
 account_config = {
     "账户1": {
@@ -65,11 +65,11 @@ account_config = {
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 10,
+                'cap_weight': 1,
                 'long_cap_weight': 1,
                 'short_cap_weight': 0,
                 'long_select_coin_num': 0.1,
-                'short_select_coin_num': 0.1,
+                'short_select_coin_num': 0,
                 # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
                 "factor_list": [
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
@@ -86,11 +86,11 @@ account_config = {
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 10,
+                'cap_weight': 1,
                 'long_cap_weight': 1,
                 'short_cap_weight': 0,
                 'long_select_coin_num': 0.1,
-                'short_select_coin_num': 0.1,
+                'short_select_coin_num': 0,
                 # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
                 "factor_list": [
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
@@ -100,73 +100,48 @@ account_config = {
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
-            # {
-            #     # 策略名称。与strategy目录中的策略文件名保持一致。
-            #     "strategy": "Strategy_大学生",
-            #     "offset_list": [3],
-            #     "hold_period": "24H",
-            #     "is_use_spot": True,
-            #     # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-            #     'cap_weight': 5,
-            #     'long_cap_weight': 1,
-            #     'short_cap_weight': 0,
-            #     'long_select_coin_num': (0.1, 0.2),
-            #     'short_select_coin_num': (0.1, 0.2),
-            #     # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
-            #     "factor_list": [
-            #         ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
-            #     ],
-            #     "filter_list": [
-            #         ('ZfStd', 92, 'pct:<0.8')
-            #     ],
-            #     "use_custom_func": False  # 使用系统内置因子计算、过滤函数
-            # },
-            # {
-            #     # 策略名称。与strategy目录中的策略文件名保持一致。
-            #     "strategy": "Strategy_大学生",
-            #     "offset_list": [5],
-            #     "hold_period": "24H",
-            #     "is_use_spot": True,
-            #     # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-            #     'cap_weight': 5,
-            #     'long_cap_weight': 1,
-            #     'short_cap_weight': 1,
-            #     'long_select_coin_num': (0.1, 0.2),
-            #     'short_select_coin_num': (0.1, 0.2),
-            #     # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
-            #     "factor_list": [
-            #         ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
-            #     ],
-            #     "filter_list": [
-            #         ('ZfStd', 500, 'pct:<0.8')
-            #     ],
-            #     "use_custom_func": False  # 使用系统内置因子计算、过滤函数
-            # },
-            # === 1.大学生纯多策略-------------------
-
-            # === 2.大学生中性策略 ++++++++++++++++++++++++++++++++
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
                 "strategy": "Strategy_大学生",
-                "offset_list": [16],
+                "offset_list": [3],
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 80,
+                'cap_weight': 1,
                 'long_cap_weight': 1,
-                'short_cap_weight': 1,
-                'long_select_coin_num': 0.1,
-                'short_select_coin_num': 0.1,
+                'short_cap_weight': 0,
+                'long_select_coin_num': (0.1, 0.2),
+                'short_select_coin_num': 0,
                 # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
                 "factor_list": [
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 1824, 'pct:<0.8')
+                    ('ZfStd', 92, 'pct:<0.8')
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
-            }
-            # === 2.大学生中性策略 --------------------------------
+            },
+            {
+                # 策略名称。与strategy目录中的策略文件名保持一致。
+                "strategy": "Strategy_大学生",
+                "offset_list": [5],
+                "hold_period": "24H",
+                "is_use_spot": True,
+                # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
+                'cap_weight': 1,
+                'long_cap_weight': 1,
+                'short_cap_weight': 0,
+                'long_select_coin_num': (0.1, 0.2),
+                'short_select_coin_num': 0,
+                # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
+                "factor_list": [
+                    ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
+                ],
+                "filter_list": [
+                    ('ZfStd', 500, 'pct:<0.8')
+                ],
+                "use_custom_func": False  # 使用系统内置因子计算、过滤函数
+            },
         ],
 
         # ++++ 分钟偏移功能 ++++
@@ -196,8 +171,6 @@ account_config = {
         # ++++ BNB抵扣手续费功能 ++++
         "if_use_bnb_burn": True,  # 是否开启BNB燃烧，抵扣手续费
         "buy_bnb_value": 11,  # 买多少U的bnb来抵扣手续费。建议最低11U，现货最小下单量限制10U
-        "if_transfer_bnb": True,
-        "if_rebalance": True,
         # 支持账户类型：统一账户，普通账户
         'account_type': '统一账户',
     },

@@ -154,7 +154,7 @@ account_config = {
         # 配置案例  https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxxxxxxxxxxxxxx
 
         # ++++ 交易黑名单与白名单功能 ++++
-        "black_list": ['BTCUSDT', 'ETHUSDT', 'BCHUSDT', 'LTCUSDT', 'ETCUSDT', 'LINKUSDT', 'SOLUSDT', 'AVAXUSDT', 'AAVEUSDT'],  # 黑名单。不参与策略的选币，如果持有黑名单币种，将会自动清仓
+        "black_list": ['BTCUSDT', 'ETHUSDT', 'BCHUSDT', 'LTCUSDT', 'ETCUSDT', 'LINKUSDT', 'SOLUSDT', 'AVAXUSDT', 'AAVEUSDT', 'BNBUSDT'],  # 黑名单。不参与策略的选币，如果持有黑名单币种，将会自动清仓
         "white_list": [],  # 白名单。只参与策略的选币
 
         # ++++ 其他账户设置 ++++

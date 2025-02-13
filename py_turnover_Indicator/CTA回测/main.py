@@ -40,6 +40,13 @@ class EnhancedDualMAStrategy:
         }
         self.trade_log = []
         self.current_trade = None
+        # 添加风险管理参数
+        self.risk_params = {
+            'stop_loss': 0.05,  # 止损比例
+            'take_profit': 0.05,  # 止盈比例
+            'max_position_size': 1,  # 最大仓位比例
+            'max_drawdown_limit': 0.15  # 最大回撤限制
+        }
 
     def calculate_ma(self, data):
         """计算当前和上一期的快慢均线"""
@@ -87,13 +94,29 @@ class EnhancedDualMAStrategy:
                 return -1
             return 0
 
+    def check_risk_limits(self, row, position, entry_price, current_equity):
+        """检查风险限制"""
+        # ... 现有代码 ...
+        current_price = row['close']
+        
+        # 止损检查
+        if position == 1 and (current_price/entry_price - 1) < -self.risk_params['stop_loss']:
+            return True
+        if position == -1 and (current_price/entry_price - 1) > self.risk_params['stop_loss']:
+            return True
+            
+        # 止盈检查
+        if position == 1 and (current_price/entry_price - 1) > self.risk_params['take_profit']:
+            return True
+        if position == -1 and (current_price/entry_price - 1) < -self.risk_params['take_profit']:
+            return True
+            
+        return False
+
 
 # ==================== 增强版回测引擎 ====================
 class EnhancedBacktestEngine:
-    def __init__(self, data, strategy,
-                 initial_capital=1000000,
-                 commission=0.001,  # 交易手续费率（0.1%）
-                 slippage=0.0005):  # 滑点成本（0.05%）
+    def __init__(self, data, strategy, initial_capital=1000000, commission=0.001, slippage=0.0005):
         """
         回测引擎类
         参数:
@@ -103,12 +126,29 @@ class EnhancedBacktestEngine:
             commission: 交易手续费率
             slippage: 滑点成本（反映市场冲击成本）
         """
+        self._validate_data(data)
         self.data = data
         self.strategy = strategy
         self.initial_capital = initial_capital
         self.commission = commission
         self.slippage = slippage
         self.results = None
+
+    def _validate_data(self, data):
+        """验证输入数据的完整性和有效性"""
+        if not isinstance(data, pd.DataFrame):
+            raise TypeError("数据必须是pandas DataFrame格式")
+            
+        required_columns = ['close']
+        missing_columns = [col for col in required_columns if col not in data.columns]
+        if missing_columns:
+            raise ValueError(f"数据缺少必要的列: {missing_columns}")
+            
+        if data.isnull().any().any():
+            raise ValueError("数据中存在空值")
+            
+        if len(data) < 30:  # 最小数据量要求
+            raise ValueError("数据量不足，至少需要30个交易日的数据")
 
     def run_backtest(self):
         """
@@ -124,14 +164,62 @@ class EnhancedBacktestEngine:
         # 初始化账户
         df['equity'] = float(self.initial_capital)
         df['returns'] = 0.0
+        df['drawdown'] = 0.0  # 添加回撤计算
         position = 0
         entry_price = 0
+        trading_allowed = True  # 是否允许交易的标志
 
         for i, (index, row) in enumerate(df.iterrows()):
             if i == 0: continue
 
-            signal = self.strategy.generate_signal(row)
             prev_equity = df.iloc[i - 1]['equity']
+            
+            # 计算当前回撤
+            peak_equity = df['equity'].iloc[:i+1].max()
+            current_drawdown = (peak_equity - prev_equity) / peak_equity
+            df.loc[index, 'drawdown'] = current_drawdown
+
+            # 检查是否触发最大回撤限制
+            if current_drawdown > self.strategy.risk_params['max_drawdown_limit']:
+                if position != 0:  # 如果有持仓，强制平仓
+                    # 计算平仓价格（考虑滑点）
+                    if position == 1:
+                        exit_price = row['close'] * (1 - self.slippage)
+                    else:
+                        exit_price = row['close'] * (1 + self.slippage)
+
+                    # 计算平仓收益
+                    pnl = (exit_price / entry_price - 1) * position
+                    current_equity = prev_equity * (1 + pnl)
+                    current_equity *= (1 - self.commission)
+
+                    # 记录强制平仓交易
+                    trade_duration = (index - self.strategy.current_trade['entry_date']).days
+                    self.strategy.trade_log.append({
+                        'entry_date': self.strategy.current_trade['entry_date'],
+                        'exit_date': index,
+                        'direction': 'LONG' if position == 1 else 'SHORT',
+                        'entry_price': entry_price,
+                        'exit_price': exit_price,
+                        'pnl': pnl,
+                        'duration': trade_duration,
+                        'reason': 'max_drawdown_limit'  # 标记平仓原因
+                    })
+
+                    df.loc[index, 'equity'] = current_equity
+                    position = 0
+                    
+                trading_allowed = False  # 暂停交易
+                continue
+
+            # 如果回撤恢复到限制以下，重新允许交易
+            if current_drawdown <= self.strategy.risk_params['max_drawdown_limit'] * 0.8:  # 设置缓冲区
+                trading_allowed = True
+
+            if not trading_allowed:
+                continue
+
+            signal = self.strategy.generate_signal(row)
 
             # 平仓逻辑
             if position != 0 and signal != 0:
@@ -216,6 +304,34 @@ def enhanced_analyze_performance(results, trade_log, risk_free_rate=0):
     else:
         win_rate = avg_profit = avg_loss = profit_factor = 0
 
+    # 添加更多分析指标
+    def calculate_additional_metrics():
+        if len(trade_log) > 0:
+            # 计算交易频率
+            trading_days = (trade_log[-1]['exit_date'] - trade_log[0]['entry_date']).days
+            trades_per_year = len(trade_log) * 365 / trading_days
+            
+            # 计算最大连续亏损次数
+            consecutive_losses = 0
+            max_consecutive_losses = 0
+            for trade in trade_log:
+                if trade['pnl'] < 0:
+                    consecutive_losses += 1
+                    max_consecutive_losses = max(max_consecutive_losses, consecutive_losses)
+                else:
+                    consecutive_losses = 0
+                    
+            # 计算平均持仓时间
+            avg_holding_period = np.mean([t['duration'] for t in trade_log])
+            
+            return {
+                'trades_per_year': trades_per_year,
+                'max_consecutive_losses': max_consecutive_losses,
+                'avg_holding_period': avg_holding_period
+            }
+    
+    additional_metrics = calculate_additional_metrics()
+    
     # 修改绘图部分
     plt.figure(figsize=(12, 6))
     
@@ -250,6 +366,12 @@ def enhanced_analyze_performance(results, trade_log, risk_free_rate=0):
     print(f"胜率: {win_rate:.2%}")
     print(f"平均盈利/平均亏损: {avg_profit:.2%}/{avg_loss:.2%}")
     print(f"盈亏比: {profit_factor:.2f}")
+
+    # 输出额外的分析指标
+    print(f"\n交易频率分析:")
+    print(f"年化交易次数: {additional_metrics['trades_per_year']:.2f}")
+    print(f"最大连续亏损次数: {additional_metrics['max_consecutive_losses']}")
+    print(f"平均持仓时间(天): {additional_metrics['avg_holding_period']:.2f}")
 
 
 # ==================== 参数优化模块 ====================

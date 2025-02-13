@@ -54,7 +54,7 @@ strategy_list = [
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 10,
+                'cap_weight': 15,
                 'long_cap_weight': 1,
                 'short_cap_weight': 0,
                 'long_select_coin_num': 0.1,
@@ -75,7 +75,7 @@ strategy_list = [
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 10,
+                'cap_weight': 15,
                 'long_cap_weight': 1,
                 'short_cap_weight': 0,
                 'long_select_coin_num': 0.1,
@@ -89,27 +89,27 @@ strategy_list = [
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
-            # {
-            #     # 策略名称。与strategy目录中的策略文件名保持一致。
-            #     "strategy": "Strategy_大学生",
-            #     "offset_list": [3],
-            #     "hold_period": "24H",
-            #     "is_use_spot": True,
-            #     # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-            #     'cap_weight': 5,
-            #     'long_cap_weight': 1,
-            #     'short_cap_weight': 0,
-            #     'long_select_coin_num': (0.1, 0.2),
-            #     'short_select_coin_num': (0.1, 0.2),
-            #     # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
-            #     "factor_list": [
-            #         ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
-            #     ],
-            #     "filter_list": [
-            #         ('ZfStd', 92, 'pct:<0.8')
-            #     ],
-            #     "use_custom_func": False  # 使用系统内置因子计算、过滤函数
-            # },
+            {
+                # 策略名称。与strategy目录中的策略文件名保持一致。
+                "strategy": "Strategy_大学生",
+                "offset_list": [3],
+                "hold_period": "24H",
+                "is_use_spot": True,
+                # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
+                'cap_weight': 15,
+                'long_cap_weight': 1,
+                'short_cap_weight': 0,
+                'long_select_coin_num': (0.1, 0.2),
+                'short_select_coin_num': (0.1, 0.2),
+                # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
+                "factor_list": [
+                    ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
+                ],
+                "filter_list": [
+                    ('ZfStd', 92, 'pct:<0.8')
+                ],
+                "use_custom_func": False  # 使用系统内置因子计算、过滤函数
+            },
             # {
             #     # 策略名称。与strategy目录中的策略文件名保持一致。
             #     "strategy": "Strategy_大学生",
@@ -141,25 +141,25 @@ strategy_list = [
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 80,
+                'cap_weight': 50,
                 'long_cap_weight': 1,
                 'short_cap_weight': 1,
                 'long_select_coin_num': 0.1,
-                'short_select_coin_num': (0.1, 0.2),
+                'short_select_coin_num': 0.1,
                 # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
                 "factor_list": [
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
-                "filter_list": [
-                    ('ZfStd', 1824, 'pct:<0.8')
-                ],
+                # "filter_list": [
+                #     ('ZfStd', 1824, 'pct:<0.8')
+                # ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             }
             # === 2.大学生中性策略 --------------------------------
         ]
 
 min_kline_num = 168  # 最少上市多久，不满该K线根数的币剔除，即剔除刚刚上市的新币。168：标识168个小时，即：7*24
-black_list = ['BTCUSDT', 'ETHUSDT', 'BCHUSDT', 'LTCUSDT', 'ETCUSDT', 'LINKUSDT', 'SOLUSDT', 'AVAXUSDT', 'AAVEUSDT']  # 拉黑名单，永远不会交易。不喜欢的币、异常的币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
+black_list = ['BTCUSDT', 'ETHUSDT', 'BCHUSDT', 'LTCUSDT', 'ETCUSDT', 'LINKUSDT', 'SOLUSDT', 'AVAXUSDT', 'AAVEUSDT','DOGEUSDT']  # 拉黑名单，永远不会交易。不喜欢的币、异常的币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
 white_list = []  # 如果不为空，即只交易这些币，只在这些币当中进行选币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
 
 # ====================================================================================================

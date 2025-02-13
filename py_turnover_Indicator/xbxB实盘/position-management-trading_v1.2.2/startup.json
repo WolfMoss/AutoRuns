@@ -1,0 +1,22 @@
+{
+    "apps": [
+        {
+            "name": "pmt-startup",
+            "script": "/home/ubuntu/position-management-trading_v1.2.2/startup.py",
+            "exec_interpreter": "python",
+            "merge_logs": false,
+            "watch": false,
+            "error_file": "/home/ubuntu/position-management-trading_v1.2.2/pmt-startup.error.log",
+            "out_file": "/home/ubuntu/position-management-trading_v1.2.2/pmt-startup.out.log"
+        },
+        {
+            "name": "pmt-delist",
+            "script": "/home/ubuntu/position-management-trading_v1.2.2/delist.py",
+            "exec_interpreter": "python",
+            "merge_logs": false,
+            "watch": false,
+            "error_file": "/home/ubuntu/position-management-trading_v1.2.2/pmt-delist.error.log",
+            "out_file": "/home/ubuntu/position-management-trading_v1.2.2/pmt-delist.out.log"
+        }
+    ]
+}

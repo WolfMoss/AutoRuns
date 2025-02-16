@@ -34,33 +34,57 @@ runtime_data_path = get_folder_path('data')  # 回测结果存放的的文件夹
 backtest_name = "选股策略精心随机混合"  # 回测的策略组合的名称。可以自己任意取。一般建议，一个回测组，就是实盘中的一个账户。
 # 策略明细
 strategy_list = [
-    {
-        "name": "小市值_周黎明_定风波择时",
-        "hold_period": "W",
-        "offset_list": [0, 1, 2, 3, 4],
-        "select_num": 5,
-        "cap_weight": 1,
-        "rebalance_time": "0945-0945",
-        "factor_list": [
-            ("Ret", False, 5, 100),
-            ("Ret", False, 20, 0.2),
-            ("一级行业", False, "", 2),
-            ("市值", True, "", 1),
-            ("开盘至今涨幅", False, "0945", ("前50%择时", 0.6)),
-        ],
-        "filter_list": [
-            ("成交额相关因子", ("均值", 5), "val:>=5000_0000", True),
-            ("收盘价", "", "val:<15", True),
-            ('代码开头', ['sh688'], 'val:!=1'),
-        ],
-    },
     # {
-    #     "name": "中等生策略",
+    #     "name": "小市值_基本面优化_定风波择时",
     #     "hold_period": "W",
     #     "offset_list": [0, 1, 2, 3, 4],
     #     "select_num": 5,
     #     "cap_weight": 1,
-    #     "rebalance_time": "open",
+    #     "rebalance_time": "close",
+    #     "factor_list": [
+    #         ("市值", True, "", 1),
+    #         ("归母净利润同比增速", False, 60, 1),
+    #         ("开盘至今涨幅", False, "0945", ("前40%择时", 0.5)),
+    #     ],
+    #     "filter_list": [
+    #         ("ROE", "单季", "pct:<=0.8", False),
+    #         ("成交额相关因子", ("均值", 5), "val:>=5000_0000", True),
+    #         ("收盘价", "", "val:<20", True),
+    #         ("涨跌幅", "", "val:>-0.08", True),
+    #         ("涨跌幅", "", "val:<=0.07", True),
+    #         ('代码开头', ['sh688'], 'val:!=1'),
+    #         #('月份', [1,4], 'val:!=1'),  # 不在4月份选股
+    #     ],
+    # },
+    {
+        "name": "小市值_基本面优化",
+        "hold_period": "W",
+        "offset_list": [0, 1, 2, 3, 4],
+        "select_num": 5,
+        "cap_weight": 1,
+        "rebalance_time": "open",
+        "factor_list": [
+            ("市值", True, "", 1),
+            ("归母净利润同比增速", False, 60, 1),
+            #("开盘至今涨幅", False, "0945", ("前40%择时", 0.5)),
+        ],
+        "filter_list": [
+            ("ROE", "单季", "pct:<=0.8", False),
+            ("成交额相关因子", ("均值", 5), "val:>=5000_0000", True),
+            ("收盘价", "", "val:<20", True),
+            ("涨跌幅", "", "val:>-0.08", True),
+            ("涨跌幅", "", "val:<=0.07", True),
+            ('代码开头', ['sh688'], 'val:!=1'),
+            ('月份', [1,4,12], 'val:!=1'),  # 不在4月份选股
+        ],
+    },
+    # {
+    #     "name": "中等生策略_定风波择时",
+    #     "hold_period": "W",
+    #     "offset_list": [0, 1, 2, 3, 4],
+    #     "select_num": 5,
+    #     "cap_weight": 1,
+    #     "rebalance_time": "0955-0955",
     #     "factor_list": [
     #         ("指数相关性", False, ["sh000300", 20], 1),
     #         ("指数相关性", False, ["sh932000", 20], 1),
@@ -69,8 +93,15 @@ strategy_list = [
     #         ("指数相关性", False, ["sh000852", 20], 1),
     #         ("指数相关性", False, ["sh000905", 20], 1),
     #         ("指数相关性", False, ["sz399006", 20], 1),
+    #         ("开盘至今涨幅", False, "0945", ("前100择时", 0.5)),
     #     ],
-    #     "filter_list": [("收盘价", "", "val:<15", True)],
+    #     "filter_list": [
+    #         ("收盘价", "", "val:<15", True),
+    #         ("涨跌幅", "", "val:>-0.08", True),
+    #         ("涨跌幅", "", "val:<=0.07", True),
+    #         ('代码开头', ['sh688'], 'val:!=1'),
+    #         ('月份', [1,4,12], 'val:!=1'),  # 不在4月份选股
+    #     ],
     # },
     # {
     #     "name": "低波大市值",
@@ -80,8 +111,13 @@ strategy_list = [
     #     "cap_weight": 1,
     #     "rebalance_time": "open",
     #     "factor_list": [("市值", False, "", 1), ("波动率", True, 250, 1)],
-    #     "filter_list": [("收盘价", "", "val:<15", True)],
-    # },
+    #     "filter_list": [
+    #         ("收盘价", "", "val:<15", True),
+    #         ("涨跌幅", "", "val:>-0.08", True),
+    #         ("涨跌幅", "", "val:<=0.07", True),
+    #         ('代码开头', ['sh688'], 'val:!=1'),
+    #     ],
+    # }
 ]
 
 # 上市至今交易天数

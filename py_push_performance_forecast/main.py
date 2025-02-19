@@ -34,8 +34,8 @@ def PostDingMes(title,msg):
 #----------------------------------------------------------------------
 
 conn = pymysql.connect(
-    host='axiba.idnmd.top',
-    port=8306,
+    host='64.110.105.176',
+    port=3306,
     user='root',
     password='ilikecs123!',
     db='quant'

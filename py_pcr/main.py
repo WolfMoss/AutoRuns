@@ -27,7 +27,7 @@ def geturl(formatted_date):
 # 获取当前日期和时间
 current_date = datetime.datetime.today() - datetime.timedelta(days=0)
 
-db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
+db = pymysql.connect(host='64.110.105.176', user='root', passwd='ilikecs123!', port=3306, db='quant')
 cursor = db.cursor()
 
 for day in range(1):

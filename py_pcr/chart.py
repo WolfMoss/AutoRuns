@@ -4,10 +4,10 @@ import plotly.graph_objects as go
 
 def get_pcr_data(security_code):
     db = pymysql.connect(
-        host='axiba.idnmd.top',
+        host='64.110.105.176',
         user='root',
         passwd='ilikecs123!',
-        port=8306,
+        port=3306,
         db='quant'
     )
     cursor = db.cursor()

@@ -39,29 +39,31 @@ if __name__ == '__main__':
     # 因子遍历的参数范围
     strategies = []
     for hold_period in ('W'):
-        for Percentage in('0.08',):
-            for Proportion in ('0.07',):
+        for Percentage in('0.098','0.09','0.08','0.07','0.06','0.05','0.04','0.03',):
+            for Proportion in ('0.098','0.09','0.08','0.07','0.06','0.05','0.04','0.03',):
                 strategy_list = [
                     {
-                    "name": "小市值_基本面优化_定风波择时",
-                    "hold_period": 'W',
-                    "offset_list": [0, 1, 2, 3, 4],
-                    "select_num": 5,
-                    "cap_weight": 1,
-                    "rebalance_time": "close",
-                    "factor_list": [
+                        "name": "小市值_基本面优化_定风波择时",
+                        "hold_period": "W",
+                        "offset_list": [0, 1, 2, 3, 4],
+                        "select_num": 5,
+                        "cap_weight": 1,
+                        "rebalance_time": "close",
+                        "factor_list": [
                             ("市值", True, "", 1),
                             ("归母净利润同比增速", False, 60, 1),
-                            ("开盘至今涨幅", False, "0945", (f"前40%择时", 0.5)),
+                            ("开盘至今涨幅", False, "0945", ("前40%择时", 0.5)),
                         ],
-                    "filter_list": [
+                        "filter_list": [
                             ("ROE", "单季", "pct:<=0.8", False),
-                            ("成交额相关因子", ("均值", 5), "val:>=5000_0000", True),
-                            ("收盘价", "", "val:<15", True),
-                            ("涨跌幅", "", f"val:>-{Percentage}", True),
-                            ("涨跌幅", "", f"val:<={Proportion}", True),
+                            ("成交额相关因子", ("均值", 5), "val:>=2000_0000", True),
+                            ("收盘价", "", "val:<20", True),
+                            ("涨跌幅", "", "val:>-0.08", True),
+                            ("涨跌幅", "", "val:<=0.07", True),
+                            ("日内涨跌幅", "", f"val:>-{Percentage}", True),
+                            ("日内涨跌幅", "", f"val:<={Proportion}", True),
                             ('代码开头', ['sh688'], 'val:!=1'),
-                            #('月份', [1,4], 'val:!=1'),  # 不在4月份选股
+                            # ('月份', [1,4], 'val:!=1'),  # 不在4月份选股
                         ],
                     },
                 ]

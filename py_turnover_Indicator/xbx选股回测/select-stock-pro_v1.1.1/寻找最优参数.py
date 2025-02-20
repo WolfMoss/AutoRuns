@@ -48,7 +48,7 @@ if __name__ == '__main__':
                         "offset_list": [0, 1, 2, 3, 4],
                         "select_num": 5,
                         "cap_weight": 1,
-                        "rebalance_time": "close",
+                        "rebalance_time": "0955-0955",
                         "factor_list": [
                             ("市值", True, "", 1),
                             ("归母净利润同比增速", False, 60, 1),

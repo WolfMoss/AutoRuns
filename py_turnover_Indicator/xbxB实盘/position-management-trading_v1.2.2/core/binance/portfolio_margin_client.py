@@ -468,7 +468,7 @@ class PortfolioMarginClient(BinanceClient):
                     'usdt': 0,
                     'equity': 0,
                     'dust_spot_df': pd.DataFrame(),
-                    'spot_position_df': 0
+                    'spot_position_df': pd.DataFrame(),
                 },
                 'swap_assets': {
                     'assets_pos_value': {},

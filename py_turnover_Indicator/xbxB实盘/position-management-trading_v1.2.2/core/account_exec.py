@@ -55,11 +55,15 @@ def main() -> datetime | None:
     account_config = init_system()
     me_conf = init_mef_system()
     if is_debug:
-        logger.debug('🐞 调试模式 - 不更新账户信息')
+        logger.debug('🐞调试模式 - 不更新账户信息')
+        is_ready = True
     else:
         account_config.use_spot = me_conf.use_spot
         account_config.bn.reset_max_leverage()  # 重置页面杠杆（新币可能会没有被设置过）
-        account_config.update_account_info(is_operate=True)
+        is_ready = account_config.update_account_info(is_operate=True)
+    if is_ready is None or not is_ready:
+        logger.info(f'{account_config.name} 更新没有准备好，跳过当前账户')
+        return None
     divider(f'🚀 [{account_config.name}] 开始', '+')
 
     # ====================================================================================================

@@ -25,7 +25,7 @@ from core.model.strategy_config import StrategyConfig
     'select_num': 5,
     'cap_weight': 1,
     'rebalance_time': '0955-0955',
-    'factor_list': [('成交额相关因子', True, ('标准差', 5), 1),
+    'factor_list': [('成交额Std', True,5, 1),
                     ('开盘至今涨幅', False, '0945', ('全市场择时', 0.4)),],
     'filter_list': [('成交额Mean', 5, 'val:>=5000_0000', True),
                     ('近期停牌天数', 5, 'val:<1', True)]
@@ -57,13 +57,20 @@ def calc_select_factor(df, strategy: StrategyConfig) -> pd.DataFrame:
     """
 
     # 读取因子信息
-    alpha, decl = strategy.factor_list
+    alpha, *others = strategy.factor_list
 
     # 排序
     df['复合因子'] = df.groupby('交易日期')[alpha.col_name].rank(ascending=alpha.is_sort_asc, method='min')
 
+    # =====定风波择时策略=====
+    # 如果有decl因子，则表示需要计算定风波择时
+    if others:
+        df = calm_the_storm(others[0], df, strategy)
+    return df
+
+
+def calm_the_storm(decl, df, strategy):
     method, ratio = decl.args
-    stock_list = []  # 保存最后一个交易日的股票代码，用于实盘计算下跌比例
     if method == '全市场择时':
         df['下跌比例'] = df.groupby('交易日期')[decl.col_name].transform(lambda x: (x < 0).mean())
         stock_list = df[df['交易日期'] == df['交易日期'].max()]['股票代码'].to_list()
@@ -92,5 +99,4 @@ def calc_select_factor(df, strategy: StrategyConfig) -> pd.DataFrame:
     os.makedirs(save_path, exist_ok=True)
     with open(save_path / f'{strategy.name}.txt', 'w') as f:
         f.write(str(stock_list))
-
     return df

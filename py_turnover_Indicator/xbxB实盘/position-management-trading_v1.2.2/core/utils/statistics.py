@@ -35,6 +35,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from core.account_manager import init_system, load_multi_accounts
 from core.binance.base_client import BinanceClient
 from core.model.account_config import AccountConfig
+from core.model.backtest_config import MultiEquityBacktestConfig
 from core.mef_manager import init_mef_system
 from core.utils.path_kit import get_file_path, get_folder_path
 from core.utils.functions import del_hist_files, refresh_diff_time, ignore_error
@@ -62,7 +63,7 @@ table_conversion='matplotlib'，速度快，中文需要修改源码等处理，
 """
 # =画图
 plt.rcParams['figure.figsize'] = [12, 4]
-plt.rcParams['font.sans-serif'] = ['SimHei', 'Arial Unicode MS', 'DejaVu Sans']
+plt.rcParams['font.sans-serif'] = ['Source Han Sans SC', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
 fmt = '%.2f%%'
 yticks = mtick.FormatStrFormatter(fmt)
@@ -716,72 +717,116 @@ def send_position_result(account_config: AccountConfig, spot_position, swap_posi
 
     for data in [send_spot_df, send_swap_df]:
         if not data.empty:
-            try:
-                # =定义导出图片位置
-                pos_pic_path = os.path.join(data_path, 'pos.png')
-                # =导出图片
-                dfi.export(data, pos_pic_path, table_conversion='matplotlib', max_cols=-1, max_rows=-1)
-                # =发送图片
-                send_wechat_work_img(pos_pic_path, account_config.wechat_webhook_url)
-            except BaseException as e:
-                print(traceback.format_exc())
-                print('持仓数据转换图片出现错误', e)
+            send_img_for_dataframe(data, account_config.wechat_webhook_url)
 
 
-def draw_equity_and_send_pic(equity_df, transfer_df, title, webhook_url):
+def send_img_for_dataframe(dataframe, wechat_webhook_url):
+    try:
+        # =定义导出图片位置
+        pos_pic_path = os.path.join(data_path, 'pos.png')
+        # =导出图片
+        dfi.export(dataframe, pos_pic_path, table_conversion='matplotlib', max_cols=-1, max_rows=-1)
+        # =发送图片
+        send_wechat_work_img(pos_pic_path, wechat_webhook_url)
+    except BaseException as e:
+        print(traceback.format_exc())
+        print('转换图片出现错误', e)
+
+
+def rgb_to_hex(rgb):
+    """将RGB颜色转换为十六进制字符串"""
+    # 将 [0, 1] 范围的颜色值重新映射到 [0, 255] 范围，并限制范围
+    r = int(max(0, min(rgb[0] * 255, 255)))
+    g = int(max(0, min(rgb[1] * 255, 255)))
+    b = int(max(0, min(rgb[2] * 255, 255)))
+    # 格式化为十六进制字符串
+    return '#{:02x}{:02x}{:02x}'.format(r, g, b)
+
+
+def draw_equity_and_send_pic(equity_df, transfer_df, title, account_config: AccountConfig):
     """
     画资金曲线并发送图片
     :param equity_df:   资金曲线数据
     :param transfer_df: 划转数据
     :param title:       标题
-    :param webhook_url: 机器人信息
+    :param account_config:用户配置
     """
     # =合并转换划转记录
     equity_df['type'] = 'log'
     equity_df = pd.concat([equity_df, transfer_df], ignore_index=True)
     equity_df.sort_values('time', inplace=True)
     equity_df.reset_index(inplace=True, drop=True)
+    equity_df['time'] = equity_df['time'].dt.floor('H')
     # =计算净值
     equity_df = net_fund(equity_df)
     equity_df['net'] = (equity_df['净值'] - 1) * 100
     equity_df['max2here'] = equity_df['净值'].expanding().max()
     equity_df['dd2here'] = (equity_df['净值'] / equity_df['max2here'] - 1) * 100
+    equity_df['long_ratio'] = equity_df['多头仓位'] / equity_df['账户总净值']
+    equity_df['short_ratio'] = equity_df['空头仓位'].abs() / equity_df['账户总净值']
+    equity_df['empty_ratio'] = (account_config.leverage - equity_df['long_ratio'] - equity_df['short_ratio']).clip(lower=0)
+    columns_to_fill = ['long_ratio', 'short_ratio', 'empty_ratio']
+    equity_df[columns_to_fill] = equity_df[columns_to_fill].fillna(method='ffill')
 
     # =画图
-    fig, ax1 = plt.subplots()
+    fig, (ax1, ax3) = plt.subplots(2, 1, figsize=(12, 8), gridspec_kw={'height_ratios': [3, 1]})
     # 标记买入和卖出点
     buy_signals = equity_df[(equity_df['type'] == 'transfer') & (equity_df['账户总净值'] > 0)]
     sell_signals = equity_df[(equity_df['type'] == 'transfer') & (equity_df['账户总净值'] < 0)]
     ax1.scatter(buy_signals['time'], buy_signals['net'], marker='+', color='black', label='add', s=100)
     ax1.scatter(sell_signals['time'], sell_signals['net'], marker='x', color='red', label='reduce', s=100)
     # 绘图
-    ax1.plot(equity_df['time'], equity_df['net'], color='b')
-    ax1.grid(True, which='both', linestyle='--', linewidth=0.5)
-    plt.title(f'{title} dd2here: {equity_df.iloc[-1]["dd2here"]:.2f}% eq_max: {equity_df["net"].max():.2f}%')
+    # 定义基础颜色
+    long_color = np.array([30, 177, 0])
+    short_color = np.array([255, 99, 77])
+    empty_color = np.array([0, 46, 77])
+    equity_df['color'] = '#{:02x}{:02x}{:02x}'.format(*[253, 147, 0])
+
+    # 动态绘制资金曲线
+    for i in range(len(equity_df) - 1):
+        start_time = equity_df.iloc[i]['time']
+        end_time = equity_df.iloc[i + 1]['time']
+        start_net = equity_df.iloc[i]['net']
+        end_net = equity_df.iloc[i + 1]['net']
+        color = equity_df.iloc[i]['color']
+        ax1.plot([start_time, end_time], [start_net, end_net], color=color, zorder=3)
+
+    ax1.grid(True, which='both', linestyle='--', linewidth=0.5, zorder=1)
+    ax1.set_title(f'{title} dd2here: {equity_df.iloc[-1]["dd2here"]:.2f}% eq_max: {equity_df["net"].max():.2f}%')
     ax1.yaxis.set_major_formatter(yticks)
 
     # 创建右侧轴
     # 右轴 回撤
     ax2 = ax1.twinx()
-    ax2.fill_between(equity_df['time'], equity_df['dd2here'], 0, color='darkgray', alpha=0.2)
+    ax2.fill_between(equity_df['time'], equity_df['dd2here'], 0, color='#d5d5d5', alpha=0.2, zorder=0)
     ax2.set_ylabel('dd2here (%)')
     ax2.yaxis.set_major_formatter(yticks)
+
+    # 子图：多头和空头占比
+    ax3.stackplot(equity_df['time'], equity_df['long_ratio'], equity_df['short_ratio'], equity_df['empty_ratio'],
+                  labels=['Long', 'Short', 'empty'],
+                  colors=[long_color / 255, short_color / 255, empty_color / 255], alpha=0.9)
+    ax3.set_ylabel('Ratio')
+    ax3.set_xlabel('Time')
+    ax3.legend(loc='upper left')
+    ax3.grid(True, linestyle='--', linewidth=0.5)
 
     # =定义导出图片位置
     pos_pic_path = os.path.join(data_path, 'pos.png')
     # =保存图片
     plt.savefig(pos_pic_path)
     # =发送图片
-    send_wechat_work_img(pos_pic_path, webhook_url)
+    send_wechat_work_img(pos_pic_path, account_config.wechat_webhook_url)
 
 
-def save_and_send_equity_info(account_config: AccountConfig, swap_position, spot_equity, account_equity):
+def save_and_send_equity_info(account_config: AccountConfig, swap_position, spot_equity, account_equity, spot_usdt):
     """
     保存、发送账户信息
     :param account_config: 账户配置对象
     :param swap_position: 合约持仓
     :param spot_equity: 现货净值
     :param account_equity: 账户净值
+    :param spot_usdt: 现货的u
     :return:
     """
     # =创建存储账户净值文件目录
@@ -796,20 +841,19 @@ def save_and_send_equity_info(account_config: AccountConfig, swap_position, spot
     # 记录账户总净值
     new_equity_df.loc[0, '账户总净值'] = round(account_equity, 2)
     # 记录多头现货
-    new_equity_df.loc[0, '多头现货'] = round(spot_equity, 2)
+    new_equity_df.loc[0, '多头现货'] = round(spot_equity, 2) - spot_usdt
 
     # =追加信息到本地存储中
     swap_send_df = calc_swap_position(swap_position)
     if swap_send_df is None or swap_send_df.empty:
-        new_equity_df.loc[0, '多头合约'] = 0  # 记录多头合约
-        new_equity_df.loc[0, '多头仓位'] = 0  # 记录多头仓位
-        new_equity_df.loc[0, '空头仓位'] = 0  # 记录空头仓位
+        new_equity_df.loc[0, '多头合约'] = 0  # 记录多头合约，合约为空时，无合约多头
+        new_equity_df.loc[0, '多头仓位'] = round(spot_equity, 2) - spot_usdt  # 记录多头仓位，合约为空时，多头仓位就只有现货仓位
+        new_equity_df.loc[0, '空头仓位'] = 0  # 记录空头仓位，合约为空时，无空头仓位
     else:
         # 记录多头合约
         new_equity_df.loc[0, '多头合约'] = round(swap_send_df[swap_send_df['side'] == 1]['pos_u'].sum(), 2)
         # 记录多头仓位
-        new_equity_df.loc[0, '多头仓位'] = round(spot_equity + swap_send_df[swap_send_df['side'] == 1]['pos_u'].sum(),
-                                                 2)
+        new_equity_df.loc[0, '多头仓位'] = round(spot_equity - spot_usdt + swap_send_df[swap_send_df['side'] == 1]['pos_u'].sum(), 2)
         # 记录空头仓位
         new_equity_df.loc[0, '空头仓位'] = round(swap_send_df[swap_send_df['side'] == -1]['pos_u'].sum(), 2)
 
@@ -845,14 +889,12 @@ def save_and_send_equity_info(account_config: AccountConfig, swap_position, spot
         # =构建近30天数据
         equity_df1 = equity_df.iloc[-720:, :].reset_index(drop=True)
         # 绘图
-        draw_equity_and_send_pic(equity_df1, transfer_df, 'equity-curve(last 30 days)',
-                                 account_config.wechat_webhook_url)
+        draw_equity_and_send_pic(equity_df1, transfer_df, 'equity-curve(last 30 days)', account_config)
 
         # =构建近7天数据
         equity_df2 = equity_df.iloc[-168:, :].reset_index(drop=True)
         # 绘图
-        draw_equity_and_send_pic(equity_df2, transfer_df, 'equity-curve(last 7 days)',
-                                 account_config.wechat_webhook_url)
+        draw_equity_and_send_pic(equity_df2, transfer_df, 'equity-curve(last 7 days)', account_config)
     else:  # 如果不存在，则创建一个新的df
         old_equity_df = pd.DataFrame()
         max_all_equity = np.nan  # 历史最高为nan
@@ -879,7 +921,7 @@ def save_and_send_equity_info(account_config: AccountConfig, swap_position, spot
     equity_msg += f'历史最低账户总净值：{min_all_equity}\n'  # 记录历史最低账户净值
 
     # 记录多头仓位、多头现货、多头合约、空头仓位
-    equity_msg += f'现货UDST余额：{account_config.spot_usdt}\n'  # 记录历史USDT净值
+    equity_msg += f'现货UDST余额：{spot_usdt}\n'  # 记录历史USDT净值
     equity_msg += f'多头仓位：{new_equity_df.loc[0, "多头仓位"]:.2f}（spot {new_equity_df.loc[0, "多头现货"]:.2f}, swap {new_equity_df.loc[0, "多头合约"]:.2f}）\n'
     equity_msg += f'空头仓位：{new_equity_df.loc[0, "空头仓位"]:.2f}\n'
 
@@ -936,6 +978,132 @@ def net_fund(df):
     return df
 
 
+def format_timedelta(td):
+    days = td.days
+    hours = td.components.hours
+    if days > 0:
+        return f"{days}D{hours}H"
+    else:
+        return f"{hours}H"
+
+
+def format_timing_signal(signal):
+    match signal:
+        case 1:
+            return 'LONG'
+        case -1:
+            return 'SHORT'
+        case 0:
+            return 'EMPTY'
+        case _:
+            print('no known signal : ', signal)
+            return 'NO KNOWN'
+
+
+def send_fixed_ratio_info(me_conf: MultiEquityBacktestConfig, account_info: AccountConfig):
+    # 整理择时数据
+    all_timing_signal_list = []
+    for conf in me_conf.factory.config_list:
+        timing_path = conf.get_result_folder() / '再择时动态杠杆.csv'
+        if not timing_path.exists():
+            continue
+        timing_df = pd.read_csv(timing_path, encoding='utf-8-sig', parse_dates=['candle_begin_time'],
+                                usecols=['candle_begin_time', '动态杠杆'])
+        timing_df['candle_begin_time'] = timing_df['candle_begin_time'].dt.tz_localize(None)
+        last_row = timing_df.iloc[-1]
+        last_signal_time = timing_df[timing_df['动态杠杆'] != timing_df['动态杠杆'].shift()]['candle_begin_time'].iloc[
+            -1]
+        all_timing_signal_list.append({
+            'candle_begin_time': last_row['candle_begin_time'],
+            'strategy': f'{conf.timing.name}-{conf.timing.params}',
+            'signal': last_row['动态杠杆'],
+            'status': format_timing_signal(last_row['动态杠杆']),  # 当前小时
+            'last_hour_status': format_timing_signal(timing_df.iloc[-2]['动态杠杆']),  # 上个小时
+            'status_change': last_row['动态杠杆'] != timing_df.iloc[-2]['动态杠杆'],  # 当小时状态是否切换
+            'hour': format_timedelta(last_row['candle_begin_time'] - last_signal_time),  # 持续时间
+        })
+
+    if all_timing_signal_list:
+        all_timing_signal = pd.DataFrame(all_timing_signal_list)
+
+        # 发送择时因子图
+        send_img_for_dataframe(all_timing_signal[['candle_begin_time', 'strategy', 'signal']],
+                               account_info.wechat_webhook_url)
+
+        # 发送择时状态图
+        send_img_for_dataframe(
+            all_timing_signal[['strategy', 'status', 'last_hour_status', 'status_change', 'hour']],
+            account_info.wechat_webhook_url)
+
+
+def send_rotation_info(me_conf: MultiEquityBacktestConfig, account_info: AccountConfig):
+    # 整理轮动数据
+    all_rotation_df_list = []
+    all_rotation_signal_list = []
+    idx_to_conf_dict = {}
+    start_time = None
+
+    for idx, conf in enumerate(me_conf.factory.config_list):
+        factor_df = pd.read_pickle(conf.get_result_folder() / 'equity_df.pkl')
+        factor_df['candle_begin_time'] = factor_df['candle_begin_time'].dt.tz_localize(None)
+        last_row = factor_df.iloc[-1]
+        all_rotation_signal_list.append({
+            'candle_begin_time': last_row['candle_begin_time'],
+            'strategy': conf.name,
+            'has_timing': None if conf.timing is None else conf.timing.name,
+            **{col: last_row[col] for col in
+               sorted(me_conf.strategy.factor_columns, key=lambda x: int(x.split('_')[1]))}
+        })
+        if start_time is None or factor_df.iloc[0]['candle_begin_time'] > start_time:
+            start_time = factor_df.iloc[0]['candle_begin_time']
+        all_rotation_df_list.append(factor_df)
+        idx_to_conf_dict[idx] = conf.strategy_type
+
+    # 需要对齐所有资金曲线数据的长度
+    for idx, df in enumerate(all_rotation_df_list):
+        all_rotation_df_list[idx] = df[df['candle_begin_time'] >= start_time]
+
+    all_rotation_status_list = []
+    for factor_info in me_conf.strategy.params['factor_list']:
+        _rotation_df = me_conf.strategy.core_funcs['cal_one_ratio'](factor_info, all_rotation_df_list)
+        _rotation_df.rename(columns=idx_to_conf_dict, inplace=True)
+        _rotation_df['status'] = _rotation_df.idxmax(axis=1)
+        last_signal_time = _rotation_df[_rotation_df['status'] != _rotation_df['status'].shift()].index[-1]
+        all_rotation_status_list.append({
+            'factor': f'{factor_info[0]}_{factor_info[2]}',
+            'status': _rotation_df.iloc[-1]['status'],
+            'last_hour_status': _rotation_df.iloc[-2]['status'],
+            'status_change': _rotation_df.iloc[-1]['status'] != _rotation_df.iloc[-2]['status'],
+            'hour': format_timedelta(_rotation_df.index[-1] - last_signal_time),
+        })
+
+    if all_rotation_signal_list:
+        # 发送轮动因子图
+        send_img_for_dataframe(pd.DataFrame(all_rotation_signal_list), account_info.wechat_webhook_url)
+
+    if all_rotation_status_list:
+        # 发送轮动状态图
+        send_img_for_dataframe(pd.DataFrame(all_rotation_status_list), account_info.wechat_webhook_url)
+
+
+def send_pos_strategy_info(me_conf: MultiEquityBacktestConfig, account_info: AccountConfig):
+    if me_conf.strategy.name == 'FixedRatioStrategy':
+        send_fixed_ratio_info(me_conf, account_info)
+
+    if me_conf.strategy.name == 'RotationStrategy':
+        send_rotation_info(me_conf, account_info)
+        send_fixed_ratio_info(me_conf, account_info)
+
+
+def calculate_status(row):
+    # 找出大于 0 的列
+    positive_columns = row[row > 0].index.tolist()
+    if len(positive_columns) == 1:
+        return positive_columns[0]  # 返回列名
+    else:
+        return 'Mix'  # 多列大于 0 或没有列大于 0
+
+
 def run():
     import sys
     if len(sys.argv) > 1:
@@ -970,9 +1138,11 @@ def run():
             if account_info.use_spot:
                 spot_position = account_overview['spot_assets']['spot_position_df']
                 spot_equity = account_overview['spot_assets']['equity']
+                spot_usdt = account_overview['spot_assets']['usdt']
             else:
                 spot_position = pd.DataFrame()
                 spot_equity = 0
+                spot_usdt = 0
         except BaseException as e:
             print(e)
             print(traceback.format_exc())
@@ -996,14 +1166,19 @@ def run():
         position_df = me_conf.factory.result_folder / '仓位比例.csv'
         if position_df.exists():
             position_df = pd.read_csv(position_df, index_col=0)
+            position_df.index.name = 'time'
             last_pos = position_df.iloc[-1]
-            stg_names = [strategy_pool[int(idx)].get('name', f'策略{idx}') for idx in
-                         last_pos[last_pos != 0].index.to_list()]
-            rotation_msg = f"【当前策略状态】\n\n{stg_names}\n"
+            content = ''
+            for idx in last_pos.index.to_list():
+                content += f"{strategy_pool[int(idx)].get('name', f'策略{idx}')}: {round(last_pos[idx] * 100, 4)}%\n"
+            rotation_msg = f"【子策略状态】\n\n{content}\n"
             send_wechat_work_msg(rotation_msg, account_info.wechat_webhook_url)
 
+        # 发送仓位管理统计数据
+        send_pos_strategy_info(me_conf, account_info)
+
         # ===生成账户净值信息
-        equity_msg = save_and_send_equity_info(account_info, swap_position, spot_equity, account_equity)
+        equity_msg = save_and_send_equity_info(account_info, swap_position, spot_equity, account_equity, spot_usdt)
         # =发送账户净值信息
         send_wechat_work_msg(equity_msg, account_info.wechat_webhook_url)
 

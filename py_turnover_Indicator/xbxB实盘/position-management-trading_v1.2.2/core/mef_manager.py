@@ -23,6 +23,8 @@ def init_mef_system(env_account: str = None) -> MultiEquityBacktestConfig:
     if env_account:
         os.environ["X3S_TRADING_ACCOUNT"] = env_account
         importlib.reload(config)
+        import core.model.backtest_config as backtest_config
+        importlib.reload(backtest_config)
 
     # 把成功初始化的对象放入到返回结果
     return MultiEquityBacktestConfig(

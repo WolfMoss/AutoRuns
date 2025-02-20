@@ -185,12 +185,12 @@ def divider(name='', sep='=', _logger=None, with_timestamp=True) -> None:
     sep_len = 88
     if with_timestamp:
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        mid_20ou = f' {name} {now} '
+        mid_2qgm = f' {name} {now} '
     else:
-        mid_20ou = f' {name} '
-    middle_width = get_display_width(mid_20ou)
+        mid_2qgm = f' {name} '
+    middle_width = get_display_width(mid_2qgm)
     decoration_count = max(4, (sep_len - middle_width) // 2)
-    line = sep * decoration_count + mid_20ou + sep * decoration_count
+    line = sep * decoration_count + mid_2qgm + sep * decoration_count
 
     # 如果总长度不够，再补一个分隔符
     if get_display_width(line) < sep_len:
@@ -210,7 +210,7 @@ if __name__ == '__main__':
     # 输出日志信息
     logger.debug("调试信息，没有标记和颜色，等同于print")
     logger.info("提示信息，蓝色的，可以记录一些中间结果")
-    # noinspection PyUnresolvedReferences 20ou
+    # noinspection PyUnresolvedReferences 2qgm
     logger.ok("完成提示，绿色的，通常表示成功和完成")
     logger.warning("警告信息，黄色的，通常表示警告")
     logger.error("错误信息，红色的，通常是报错的相关提示")

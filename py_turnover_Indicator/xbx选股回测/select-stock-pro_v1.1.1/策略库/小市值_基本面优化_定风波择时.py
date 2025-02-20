@@ -15,6 +15,7 @@ from core.model.strategy_config import StrategyConfig
 import os
 import config as cfg
 from pathlib import Path
+
 """
 使用范例：
 {
@@ -58,7 +59,7 @@ def calc_select_factor(df, strategy: StrategyConfig) -> pd.DataFrame:
     """
 
     # 读取因子信息
-    mcap, profit_growth, decl = strategy.factor_list
+    mcap, profit_growth, *others = strategy.factor_list
 
     df['净利润增速排名'] = df.groupby('交易日期')[profit_growth.col_name].rank(ascending=profit_growth.is_sort_asc,
                                                                                method='min')
@@ -68,9 +69,15 @@ def calc_select_factor(df, strategy: StrategyConfig) -> pd.DataFrame:
     df['复合因子'] = df['净利润增速排名'] + df['市值_排名']
 
     # =====定风波择时策略=====
+    # 如果有decl因子，则表示需要计算定风波择时
+    if others:
+        df = calm_the_storm(others[0], df, strategy)
 
+    return df
+
+
+def calm_the_storm(decl, df, strategy):
     method, ratio = decl.args
-    stock_list = []  # 保存最后一个交易日的股票代码，用于实盘计算下跌比例
     if method == '全市场择时':
         df['下跌比例'] = df.groupby('交易日期')[decl.col_name].transform(lambda x: (x < 0).mean())
         stock_list = df[df['交易日期'] == df['交易日期'].max()]['股票代码'].to_list()
@@ -92,12 +99,11 @@ def calc_select_factor(df, strategy: StrategyConfig) -> pd.DataFrame:
     else:
         raise ValueError('计算下跌比例的范围设置有误，应当是【前N择时】或者【前N%择时】')
 
-        # 只保留下跌比例小于等于ratio的股票
+    # 只保留下跌比例小于等于ratio的股票
     df = df[df['下跌比例'] <= ratio]
     # 保存最后一个交易日的股票代码，用于实盘计算下跌比例
     save_path = Path(cfg.runtime_data_path) / f'定风波择时/'
     os.makedirs(save_path, exist_ok=True)
     with open(save_path / f'{strategy.name}.txt', 'w') as f:
         f.write(str(stock_list))
-
     return df

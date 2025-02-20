@@ -576,7 +576,7 @@ class BinanceClient:
             price = round(price, price_precision[symbol])
 
             # ===判断是否是清仓交易
-            reduce_only = True if row['交易模式'] == '清仓' and symbol_type == 'swap' else False
+            reduce_only = True if row['交易模式'] == '清仓' else False
 
             # ===判断交易金额是否小于最小下单金额（一般是5元），小于的跳过
             if quantity * price < min_notional.get(symbol, self.order_money_limit[symbol_type]):

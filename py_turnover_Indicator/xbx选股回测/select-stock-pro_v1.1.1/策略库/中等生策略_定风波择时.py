@@ -88,16 +88,31 @@ def calc_select_factor(df, strategy: StrategyConfig) -> pd.DataFrame:
     # 按照相似度因子排序
     df['复合因子'] = df.groupby(['交易日期'])["相似度因子"].rank(ascending=False, method='min')
 
+    # =====定风波择时策略=====
     # 找到下跌比例因子
     decline = [factor for factor in strategy.all_factors if '开盘至今涨幅' in factor.col_name]
-    if len(decline) == 0:
-        raise ValueError('没有找到开盘至今涨幅因子')
+    if len(decline) > 0:
+        df = calm_the_storm(decline[0], df, strategy)
 
-    # =====定风波择时策略=====
+    return df
 
-    decl = decline[0]  # 如果配置了多个因子，只有第一个会生效
+
+def load_index_data(index_code):
+    index_path = Path(cfg.data_center_path) / f'stock-main-index-data/{index_code}.csv'
+    try:
+        index_df = pd.read_csv(index_path, encoding='gbk', parse_dates=['candle_end_time'])
+    except:
+        index_df = pd.read_csv(index_path, encoding='gbk', parse_dates=['candle_end_time'], skiprows=1)
+
+    index_df['指数涨跌幅'] = index_df['close'].pct_change()
+    index_df['指数涨跌幅'] = index_df['指数涨跌幅'].fillna(value=index_df['close'] / index_df['open'] - 1)
+    index_df.rename(columns={'candle_end_time': '交易日期'}, inplace=True)
+    index_df = index_df[['交易日期', '指数涨跌幅']]
+    return index_df
+
+
+def calm_the_storm(decl, df, strategy):
     method, ratio = decl.args
-    stock_list = []  # 保存最后一个交易日的股票代码，用于实盘计算下跌比例
     if method == '全市场择时':
         df['下跌比例'] = df.groupby('交易日期')[decl.col_name].transform(lambda x: (x < 0).mean())
         stock_list = df[df['交易日期'] == df['交易日期'].max()]['股票代码'].to_list()
@@ -126,19 +141,4 @@ def calc_select_factor(df, strategy: StrategyConfig) -> pd.DataFrame:
     os.makedirs(save_path, exist_ok=True)
     with open(save_path / f'{strategy.name}.txt', 'w') as f:
         f.write(str(stock_list))
-
     return df
-
-
-def load_index_data(index_code):
-    index_path = Path(cfg.data_center_path) / f'stock-main-index-data/{index_code}.csv'
-    try:
-        index_df = pd.read_csv(index_path, encoding='gbk', parse_dates=['candle_end_time'])
-    except:
-        index_df = pd.read_csv(index_path, encoding='gbk', parse_dates=['candle_end_time'], skiprows=1)
-
-    index_df['指数涨跌幅'] = index_df['close'].pct_change()
-    index_df['指数涨跌幅'] = index_df['指数涨跌幅'].fillna(value=index_df['close'] / index_df['open'] - 1)
-    index_df.rename(columns={'candle_end_time': '交易日期'}, inplace=True)
-    index_df = index_df[['交易日期', '指数涨跌幅']]
-    return index_df

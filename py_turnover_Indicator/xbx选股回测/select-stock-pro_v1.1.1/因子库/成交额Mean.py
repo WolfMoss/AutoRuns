@@ -38,8 +38,7 @@ def add_factor(df: pd.DataFrame, param=None, **kwargs) -> pd.DataFrame:
     # 从额外参数中获取因子名称
     col_name = kwargs['col_name']
     n = param
-
-    factor_col = df['成交额'].rolling(n).std()
+    factor_col = df['成交额'].rolling(n).mean()
 
     # 创建包含指定因子的DataFrame
     factor_df = pd.DataFrame({col_name: factor_col}, index=df.index)

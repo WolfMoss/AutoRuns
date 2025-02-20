@@ -9,6 +9,7 @@
 
 Author: 邢不行
 """
+import json
 import shutil
 from datetime import datetime
 from itertools import product
@@ -51,11 +52,15 @@ class BacktestConfig:
         self.unified_time: str = conf.get('unified_time', '2017-01-01')  # 计算 offset，对齐资金曲线的统一时间
 
         # 策略配置
-        self.black_list: List[str] = conf.get('black_list',
-                                              [])  # 拉黑名单，永远不会交易。不喜欢的币、异常的币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
-        self.white_list: List[str] = conf.get('white_list',
-                                              [])  # 如果不为空，即只交易这些币，只在这些币当中进行选币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
+        # 拉黑名单，永远不会交易。不喜欢的币、异常的币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
+        self.black_list: List[str] = conf.get('black_list', []) + self.load_delist()
+        # 如果不为空，即只交易这些币，只在这些币当中进行选币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
+        self.white_list: List[str] = conf.get('white_list', [])
         self.min_kline_num: int = conf.get('min_kline_num', 168)  # 最少上市多久，不满该K线根数的币剔除，即剔除刚刚上市的新币。168：标识168个小时，即：7*24
+
+        # 根据加载的策略，自动区分多头，空头，多空
+        # Long Short Neutral
+        self.strategy_type: str = 'Neutral'
 
         # 再择时配置
         self.timing: Optional[TimingSignal] = None
@@ -99,6 +104,25 @@ class BacktestConfig:
 {''.join([str(item) for item in self.strategy_list])}
 {'+' * 56}
 """
+
+    @staticmethod
+    def load_delist() -> list:
+        """
+        加载delist数据，动态处理黑名单
+        """
+        delist_path = get_file_path('data', 'delist.json', as_path_type=True)
+
+        if delist_path.exists() is False:
+            return []
+
+        try:
+            with open(delist_path, 'r') as file:
+                de_list = json.load(file)['list']
+            return [_ for _ in de_list if _.endswith('USDT')]  # 获取USDT结尾的币种
+        except Exception as e:
+            print(e)
+            return []
+
 
     @property
     def hold_period_type(self):
@@ -183,6 +207,22 @@ class BacktestConfig:
 
             if len(strategy.offset_list) > self.max_offset_len:
                 self.max_offset_len = len(strategy.offset_list)
+
+        has_long = any(
+            stg.long_select_coin_num > 0 and stg.long_cap_weight > 0
+            for stg in self.strategy_list
+        )
+        has_short = any(
+            (stg.short_select_coin_num == 'long_nums' or stg.short_select_coin_num > 0) and stg.short_cap_weight > 0
+            for stg in self.strategy_list
+        )
+
+        if has_long and not has_short:
+            self.strategy_type = 'Long'
+        elif has_short and not has_long:
+            self.strategy_type = 'Short'
+        elif has_long and has_short:
+            self.strategy_type = 'Neutral'
 
         self.factor_col_name_list = list(set(self.factor_col_name_list))
 

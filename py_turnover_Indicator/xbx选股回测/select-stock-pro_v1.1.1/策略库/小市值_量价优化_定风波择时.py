@@ -26,7 +26,7 @@ from pathlib import Path
     'rebalance_time': '0955-0955',
     'factor_list': [('Ret', True, 20, 1),
                   ('市值', True, '', 1),
-                  ('alpha95', True, 5, 1),
+                  ('成交额Std', True, 5, 1),
                   ('开盘至今涨幅', False, '0945', ('全市场择时', 0.4)),
                   ],
     'filter_list': [('成交额Mean', 5, 'val:>=5000_0000', True)]

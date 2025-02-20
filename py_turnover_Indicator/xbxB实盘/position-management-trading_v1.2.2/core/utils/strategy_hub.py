@@ -9,6 +9,7 @@
 
 Author: 邢不行
 """
+import inspect
 import hashlib
 import importlib
 
@@ -132,9 +133,10 @@ class PositionStrategyHub:
             strategy_module = importlib.import_module(module_name)
 
             # 创建一个包含模块变量和函数的字典
-            strategy_content = dict(
-                calc_ratio=getattr(strategy_module, 'calc_ratio'),
-            )
+            strategy_content = {
+                # calc_ratio=getattr(strategy_module, 'calc_ratio'),
+                name: func for name, func in inspect.getmembers(strategy_module, inspect.isfunction)
+            }
 
             # 缓存策略对象
             cls._dict_cache[strategy_name] = strategy_content

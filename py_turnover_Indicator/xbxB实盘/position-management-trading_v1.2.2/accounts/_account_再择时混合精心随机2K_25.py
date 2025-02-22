@@ -24,24 +24,24 @@ account_config = {
 # 此处只是展示配置的结构，具体配置情参考 accounts 文件夹下的 account1.py
 # ====================================================================================================
 strategy_name = '大学生选币策略-择时覆盖'  # 当前账户运行策略的名称。可以自己任意取
-get_kline_num = 2644  # 获取多少根K线。这里跟策略日频和小时频影响。日线策略，代表多少根日线k。小时策略，代表多少根小时k
+get_kline_num = 3004  # 获取多少根K线。这里跟策略日频和小时频影响。日线策略，代表多少根日线k。小时策略，代表多少根小时k
 strategy_config = {  # 策略配置
     'name': 'FixedRatioStrategy',  # *必填。使用什么策略，这里是轮动策略
     'hold_period': '1H',  # *必填。聚合后策略持仓周期。目前回测支持日线级别、小时级别。例：1H，6H，3D，7D......
     'params': {
         'cap_ratios': [
-            1 / 3, 1 / 3, 1 / 3,
+            1 / 2, 1 / 2
         ],  # *必填。资金分配比例。2个策略，每个策略资金占比1/2
     }
 }
 strategy_pool = [  # 策略池
     dict(
-        name='大学生选币策略-Bolling2-144',
+        name='大学生选币策略-Bolling1-240',
         strategy_list=[
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
                 "strategy": "Strategy_大学生",
-                "offset_list": [20],
+                "offset_list": [8],
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
@@ -55,14 +55,14 @@ strategy_pool = [  # 策略池
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 40, 'pct:<0.8')
+                    ('ZfStd', 36, 'pct:<0.8')
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
                 "strategy": "Strategy_大学生",
-                "offset_list": [12],
+                "offset_list": [1],
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
@@ -76,21 +76,21 @@ strategy_pool = [  # 策略池
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 1824, 'pct:<0.8')
+                    ('ZfStd', 2496, 'pct:<0.8')
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
         ],
         # 配置再择时之后，可以使用 re_timing.py 进行再择时的资金曲线模拟
-        re_timing={'name': 'Bolling2', 'params': [144]}  # 可选，配置再择时策略
+        re_timing={'name': 'Bolling1', 'params': [240]}  # 可选，配置再择时策略
     ),
     dict(
-        name='大学生选币策略-Bolling2-240',
+        name='大学生选币策略-Bolling1-408',
         strategy_list=[
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
                 "strategy": "Strategy_大学生",
-                "offset_list": [5],
+                "offset_list": [17],
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
@@ -104,14 +104,14 @@ strategy_pool = [  # 策略池
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 32, 'pct:<0.8')
+                    ('ZfStd', 16, 'pct:<0.8')
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
                 "strategy": "Strategy_大学生",
-                "offset_list": [4],
+                "offset_list": [21],
                 "hold_period": "24H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
@@ -125,64 +125,17 @@ strategy_pool = [  # 策略池
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 2304, 'pct:<0.8')
+                    ('ZfStd', 2112, 'pct:<0.8')
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
         ],
         # 配置再择时之后，可以使用 re_timing.py 进行再择时的资金曲线模拟
-        re_timing={'name': 'Bolling2', 'params': [240]}  # 可选，配置再择时策略
-    ),
-    dict(
-        name='大学生选币策略-Bolling1-252',
-        strategy_list=[
-            {
-                # 策略名称。与strategy目录中的策略文件名保持一致。
-                "strategy": "Strategy_大学生",
-                "offset_list": [23],
-                "hold_period": "24H",
-                "is_use_spot": True,
-                # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 1,
-                'long_cap_weight': 1,
-                'short_cap_weight': 0,
-                'long_select_coin_num': 0.1,
-                'short_select_coin_num': 0.1,
-                # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
-                "factor_list": [
-                    ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
-                ],
-                "filter_list": [
-                    ('ZfStd', 48, 'pct:<0.8')
-                ],
-                "use_custom_func": False  # 使用系统内置因子计算、过滤函数
-            },
-            {
-                # 策略名称。与strategy目录中的策略文件名保持一致。
-                "strategy": "Strategy_大学生",
-                "offset_list": [22],
-                "hold_period": "24H",
-                "is_use_spot": True,
-                # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 1,
-                'long_cap_weight': 1,
-                'short_cap_weight': 0,
-                'long_select_coin_num': 0.1,
-                'short_select_coin_num': 0.1,
-                # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
-                "factor_list": [
-                    ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
-                ],
-                "filter_list": [
-                    ('ZfStd', 1632, 'pct:<0.8')
-                ],
-                "use_custom_func": False  # 使用系统内置因子计算、过滤函数
-            },
-        ],
-        # 配置再择时之后，可以使用 re_timing.py 进行再择时的资金曲线模拟
-        re_timing={'name': 'Bolling1', 'params': [252]}  # 可选，配置再择时策略
+        re_timing={'name': 'Bolling1', 'params': [408]}  # 可选，配置再择时策略
     ),
 ]
+
+
 leverage = 1  # 杠杆数。我看哪个赌狗要把这里改成大于1的。高杠杆如梦幻泡影。不要想着一夜暴富，脚踏实地赚自己该赚的钱。
 black_list = ['BTCUSDT', 'ETHUSDT', 'BCHUSDT', 'LTCUSDT', 'ETCUSDT', 'LINKUSDT', 'SOLUSDT', 'AVAXUSDT', 'AAVEUSDT','DOGEUSDT']  # 拉黑名单，永远不会交易。不喜欢的币、异常的币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
 white_list = []  # 如果不为空，即只交易这些币，只在这些币当中进行选币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'

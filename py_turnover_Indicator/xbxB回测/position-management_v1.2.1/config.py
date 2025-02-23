@@ -159,8 +159,8 @@ strategy_pool = [  # 策略池
         strategy_list=[
             {
                 "strategy": "Strategy_空头",
-                "offset_list": range(0, 24, 1),
-                "hold_period": '24H',
+                "offset_list": range(0, 1, 1),
+                "hold_period": '1H',
                 "is_use_spot": False,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
                 'cap_weight': 1,
@@ -170,12 +170,12 @@ strategy_pool = [  # 策略池
                 'short_select_coin_num': 0.5,
                 # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
                 "factor_list": [
-                    ('QuoteVolume', True, 1, 1),
+                    #('QuoteVolume', True, 1, 1),
                     ('Cci', False, x, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
                     ('QuoteVolumeMean', x, 'pct:<0.2', False),
-                    ('Ma', [168,50], 'val:==1'),
+                    #('Ma', [168,50], 'val:==1'),
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             } for x in [168, 432, 600]

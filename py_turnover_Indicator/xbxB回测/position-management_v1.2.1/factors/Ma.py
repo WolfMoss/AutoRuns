@@ -31,9 +31,12 @@ def signal(*args):
                          .apply(lambda x: np.all(x), raw=True)
                          .fillna(False).astype(bool))
 
-    # df['ma4'] = df['close'].rolling(4).mean()
-    # ma_decreasing = (df['ma4'] < df['ma4'].shift(1)).fillna(False)
-
+    df['ma16'] = df['close'].rolling(16).mean()
+    df['ma48'] = df['close'].rolling(48).mean()
+    #ma_decreasing = (df['ma4'] < df['ma16']).fillna(False)
+    ma_decreasing = ((df['ma16'] < df['ma48']) &
+                     ((df['ma48'] - df['ma16']) >= df['ma48'] * 0.02)
+                     ).fillna(False)
 
     # 同时满足连续m根条件且MA下降，才标记为1
     #df[factor_name] = (rolling_condition & ma_decreasing).astype(int)

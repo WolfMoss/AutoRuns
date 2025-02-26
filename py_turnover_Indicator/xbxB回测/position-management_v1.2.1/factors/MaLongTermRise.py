@@ -23,16 +23,14 @@ def signal(*args):
     # 计算MA
     df['ma'] = df['close'].rolling(n).mean()
 
-    # 生成条件序列：收盘价低于MA（True/False）
-    condition = df['close'] < df['ma']
+    # 生成条件序列：收盘价>MA（True/False）
+    condition = df['close'] > df['ma']
 
     # 判断连续m根满足条件（将NaN填充为False）
-    df[factor_name] = (condition.rolling(m, min_periods=m)
-                       .apply(lambda x: np.all(x), raw=True)
-                       .fillna(False).astype(int))
+    rolling_condition = (condition.rolling(m, min_periods=m)
+                         .apply(lambda x: np.all(x), raw=True)
+                         .fillna(False).astype(bool))
 
-    # # 将整数值转换为字符串"1"和"0"
-    # df[factor_name] = df[factor_name].replace({1: "1", 0: "0"})
-
+    df[factor_name] = (rolling_condition).astype(int)
     return df
 

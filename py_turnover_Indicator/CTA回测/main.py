@@ -2,6 +2,7 @@ import datetime
 from engine import BacktestingEngine
 from cctx_data import CCTXData
 from strategy.my_strategy import MyStrategy
+from strategy.wykoff_strategy import WykoffStrategy
 
 
 def main():
@@ -28,7 +29,7 @@ def main():
     data = fetcher.get_historical_data(symbol, timeframe, since, limit, cache_file="datas")
 
     # 初始化策略实例（传入必要参数，如交易对）
-    strategy = MyStrategy(symbol)
+    strategy = WykoffStrategy(symbol)
 
     # 初始化回测引擎，将数据和策略传入
     engine = BacktestingEngine(data=data, strategy=strategy, initial_cash=1)

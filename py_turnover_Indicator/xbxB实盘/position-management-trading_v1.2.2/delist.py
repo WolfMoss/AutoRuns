@@ -60,19 +60,17 @@ def get_delist_page(page):
     # 访问目标网址
     page.get(baseurl)
     page.wait.ele_displayed('__APP')
-    match = re.search(r'href="([^"]*delisting\?[^"]*)"', page.html)
-    if match:
-        href_value = match.group(1)
+    a = page.ele('xpath://a[descendant::h3[contains(text(), "Delisting")]]')
+    href_value = a.attr('href')
+    if href_value:
         print('delisting page info: ', href_value)
     else:
         raise Exception(f'从{baseurl},未找到delisting匹配的 href 值，币安可能修改了页面文件')
-    url = html.unescape(href_value)
-    return url
+    return href_value
 
 
 def get_delist_list(page, url):
     time.sleep(random.randint(5, 10))
-    url = "https://www.binance.com" + url
     page.get(url)
     page.wait.ele_displayed('#__APP_DATA')
     ele = page.ele('#__APP_DATA')
@@ -312,6 +310,7 @@ def clear_delist_pos(delist):
                 swap_position['交易模式'] = '清仓'  # 设置交易模式
                 swap_position = swap_position[abs(swap_position['实际下单量']) > 0]  # 保留实际下单量 > 0 的数据
                 swap_position.reset_index(inplace=True)
+                swap_position['symbol_type'] = 'swap'
                 print('合约下单信息：\n', swap_position)
 
             # 获取一下现货价格
@@ -327,6 +326,7 @@ def clear_delist_pos(delist):
                 spot_position['交易模式'] = '清仓'  # 设置交易模式
                 spot_position = spot_position[abs(spot_position['实际下单量']) > 0]  # 保留实际下单量 > 0 的数据
                 spot_position.reset_index(inplace=True)
+                swap_position['symbol_type'] = 'spot'
                 print('现货下单信息：\n', spot_position)
 
             # 判断是否需要有下单信息

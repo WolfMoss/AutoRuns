@@ -209,11 +209,17 @@ class BacktestConfig:
                 self.max_offset_len = len(strategy.offset_list)
 
         has_long = any(
-            stg.long_select_coin_num > 0 and stg.long_cap_weight > 0
+            (isinstance(stg.long_select_coin_num, tuple) or stg.long_select_coin_num > 0)
+            and stg.long_cap_weight > 0
             for stg in self.strategy_list
         )
         has_short = any(
-            (stg.short_select_coin_num == 'long_nums' or stg.short_select_coin_num > 0) and stg.short_cap_weight > 0
+            (
+                    isinstance(stg.short_select_coin_num, tuple)
+                    or stg.short_select_coin_num == 'long_nums'
+                    or stg.short_select_coin_num > 0
+            )
+            and stg.short_cap_weight > 0
             for stg in self.strategy_list
         )
 

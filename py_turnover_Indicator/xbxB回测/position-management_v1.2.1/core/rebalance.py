@@ -28,8 +28,8 @@ def calc_target_lots_by_ratio(equity, prices, ratios, lot_sizes):
     # 每个币分配目标持仓资金(带方向)
     target_equity = equity * ratios
 
-    # 目标持仓资金大于 0.01U 则认为是有效持仓
-    mask = np.abs(target_equity) > 0.01
+    # 同时要求 价格 和 每手币数 都不为 0，如果数据为 0，后面计算出现 除0 操作，造成数据位数溢出
+    mask = np.logical_and(np.abs(target_equity) > 0.01, np.logical_and(prices != 0, lot_sizes != 0))
 
     # 为有效持仓分配目标持仓手数, 手数 = 目标持仓资金 / 币价 / 每手币数
     target_lots[mask] = (target_equity[mask] / prices[mask] / lot_sizes[mask]).astype(np.int64)

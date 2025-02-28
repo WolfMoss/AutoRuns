@@ -85,6 +85,7 @@ def run():
                 swap_position['交易模式'] = '减仓'  # 设置交易模式
                 swap_position = swap_position[abs(swap_position['实际下单量']) > 0]  # 保留实际下单量 > 0 的数据
                 swap_position.reset_index(inplace=True)
+                swap_position['symbol_type'] = 'swap'
                 print('合约下单信息：\n', swap_position)
 
                 # 获取一下现货价格
@@ -98,6 +99,7 @@ def run():
                 spot_position['交易模式'] = '减仓'  # 设置交易模式
                 spot_position = spot_position[abs(spot_position['实际下单量']) > 0]  # 保留实际下单量 > 0 的数据
                 spot_position.reset_index(inplace=True)
+                swap_position['symbol_type'] = 'spot'
                 print('现货下单信息：\n', spot_position)
 
                 # 判断是否需要有下单信息

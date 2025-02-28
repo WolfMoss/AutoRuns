@@ -9,9 +9,6 @@
 
 Author: 邢不行
 """
-import os
-import numpy as np
-import pandas as pd
 
 
 def signal(*args):

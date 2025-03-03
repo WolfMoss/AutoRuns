@@ -27,10 +27,10 @@ end_date = '2025-01-07'  # 回测结束时间
 # 数据存储路径，填写绝对路径
 # 使用官方准备的预处理数据，专门用于本框架回测使用，大幅提高速度
 # 现货和合约1小时预处理数据（pkl格式）：https://www.quantclass.cn/data/coin/coin-binance-spot-swap-preprocess-pkl-1h
-pre_data_path = r'E:\quantclass\treadedatas\coin-binance-spot-swap-preprocess-pkl-1h'
+pre_data_path = r'D:\quantclass\treadedatas\coin-binance-spot-swap-preprocess-pkl-1h'
 data_source_dict = {
     # 数据源的标签,需要与因子文件中的 extra_data_dict 中的 key 保持一致
-    "coin-cap": ('load_coin_cap', r'E:\quantclass\treadedatas\coin-coinmarketcap',)
+    "coin-cap": ('load_coin_cap', r'D:\quantclass\treadedatas\coin-coinmarketcap',)
 }
 
 min_kline_num = 168  # 最少上市多久，不满该K线根数的币剔除，即剔除刚刚上市的新币。168：标识168个小时，即：7*24
@@ -53,8 +53,8 @@ strategy_config = {
     'hold_period': '1H',  # *必填。聚合后策略持仓周期。目前回测支持日线级别、小时级别。例：1H，6H，3D，7D......
     'params': {
         'cap_ratios': [
-            #2 / 4,2 / 4,
-            10 / 10,
+            3 / 4,1 / 4,
+            #10 / 10,
         ]
     }
 }
@@ -63,53 +63,87 @@ strategy_config = {
 
 strategy_pool = [  # 策略池
     dict(
-        name='旗舰策略',
+        name='大学生选币策略-Bias-168',
         strategy_list=[
-                          {
-                              "strategy": "Strategy_大学生",
-                              "offset_list": range(1, 24, 1),
-                              "hold_period": '24H',
-                              "is_use_spot": True,
-                              'cap_weight': 2,
-                              'long_cap_weight': 1,
-                              'short_cap_weight': 0,
-                              'long_select_coin_num': 0.3,
-                              'short_select_coin_num': 0,
-                              "factor_list": [
-                                  ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
-                              ],
-                              "filter_list": [
-                                  ('ZfStd', x, 'pct:<0.8'),
-                              ],
-                              "filter_list_post": [
-                                  ('ZfAbsMean', x, 'val:<0.5'),
-                              ],
-                              "use_custom_func": False  # 使用系统内置因子计算、过滤函数
-                          } for x in [24, 96]
-                      ] + [
-                          {
-                              "strategy": "Strategy_空头",
-                              "offset_list": range(0, 24, 1),
-                              "hold_period": '24H',
-                              "is_use_spot": False,
-                              'cap_weight': 1 / 3,
-                              'long_cap_weight': 0,
-                              'short_cap_weight': 1,
-                              'long_select_coin_num': 0,
-                              'short_select_coin_num': 0.5,
-                              "factor_list": [
-                                  ('Cci', False, x, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
-                              ],
-                              "filter_list": [
-                                  ('QuoteVolumeMean', x, 'pct:<0.2', False),
-                              ],
-                              "filter_list_post": [
-                                  ('ZfAbsMean', x, 'val:<0.5'),
-                              ],
-                              "use_custom_func": False  # 使用系统内置因子计算、过滤函数
-                          } for x in [240, 432, 600]
-                      ],
+            {
+                # 策略名称。与strategy目录中的策略文件名保持一致。
+                "strategy": "Strategy_大学生",
+                "offset_list": [12],
+                "hold_period": "24H",
+                "is_use_spot": True,
+                # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
+                'cap_weight': 1,
+                'long_cap_weight': 1,
+                'short_cap_weight': 0,
+                'long_select_coin_num': 0.1,
+                'short_select_coin_num': 0,
+                # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
+                "factor_list": [
+                    ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
+                ],
+                "filter_list": [
+                    ('ZfStd', 32, 'pct:<0.8')
+                ],
+                "filter_list_post": [
+                    ('fundingfiter', 1, 'val:>=-0.019', False),
+                ],
+                "use_custom_func": False  # 使用系统内置因子计算、过滤函数
+            },
+            {
+                # 策略名称。与strategy目录中的策略文件名保持一致。
+                "strategy": "Strategy_大学生",
+                "offset_list": [3],
+                "hold_period": "24H",
+                "is_use_spot": True,
+                # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
+                'cap_weight': 1,
+                'long_cap_weight': 1,
+                'short_cap_weight': 0,
+                'long_select_coin_num': 0.1,
+                'short_select_coin_num': 0,
+                # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
+                "factor_list": [
+                    ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
+                ],
+                "filter_list": [
+                    ('ZfStd', 1536, 'pct:<0.8')
+                ],
+                "filter_list_post": [
+                    ('fundingfiter', 1, 'val:>=-0.019', False),
+                ],
+                "use_custom_func": False  # 使用系统内置因子计算、过滤函数
+            },
+        ],
         # 配置再择时之后，可以使用 re_timing.py 进行再择时的资金曲线模拟
+        re_timing={'name': 'Bias', 'params': [168]}  # 可选，配置再择时策略
+    ),
+    dict(
+        name='CCI选币空头策略',
+        strategy_list=[
+            {
+                "strategy": "Strategy_空头",
+                "offset_list": range(0, 1, 1),
+                "hold_period": '1H',
+                "is_use_spot": False,
+                # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
+                'cap_weight': 1,
+                'long_cap_weight': 0,
+                'short_cap_weight': 1,
+                'long_select_coin_num': 0,
+                'short_select_coin_num': 0.5,
+                # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
+                "factor_list": [
+                    #('QuoteVolume', True, 1, 1),
+                    ('Cci', False, x, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
+                ],
+                "filter_list": [
+                    ('QuoteVolumeMean', x, 'pct:<0.2', False),
+                    ('Ma', [168,50], 'val:==1'),
+                ],
+                "use_custom_func": False  # 使用系统内置因子计算、过滤函数
+            } for x in [300,]
+        ],
+        # # 配置再择时之后，可以使用 re_timing.py 进行再择时的资金曲线模拟
         re_timing={'name': 'Bolling1', 'params': [240]}  # 可选，配置再择时策略
     ),
 ]
@@ -150,11 +184,11 @@ simulator_config = dict(
 # ** 全局设置及自动化 **
 # 这些设置是客观事实，基本不会影响到回测的细节，正常不用去改动
 # ====================================================================================================
-job_num = max(os.cpu_count() - 7, 1)  # 回测并行数量
+job_num = max(os.cpu_count() - 1, 1)  # 回测并行数量
 #job_num = 1  # 回测并行数量
 
 # ==== factor_col_limit 介绍 ====
-factor_col_limit = 64  # 内存优化选项，一次性计算多少列因子。64是 16GB内存 电脑的典型值
+factor_col_limit = 128  # 内存优化选项，一次性计算多少列因子。64是 16GB内存 电脑的典型值
 # - 数字越大，计算速度越快，但同时内存占用也会增加。
 # - 该数字是在 "因子数量 * 参数数量" 的基础上进行优化的。
 #   - 例如，当你遍历 200 个因子，每个因子有 10 个参数，总共生成 2000 列因子。

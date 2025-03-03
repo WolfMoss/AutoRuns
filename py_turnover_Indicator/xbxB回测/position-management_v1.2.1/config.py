@@ -27,10 +27,10 @@ end_date = '2025-01-07'  # 回测结束时间
 # 数据存储路径，填写绝对路径
 # 使用官方准备的预处理数据，专门用于本框架回测使用，大幅提高速度
 # 现货和合约1小时预处理数据（pkl格式）：https://www.quantclass.cn/data/coin/coin-binance-spot-swap-preprocess-pkl-1h
-pre_data_path = r'D:\quantclass\treadedatas\coin-binance-spot-swap-preprocess-pkl-1h'
+pre_data_path = r'E:\quantclass\treadedatas\coin-binance-spot-swap-preprocess-pkl-1h'
 data_source_dict = {
     # 数据源的标签,需要与因子文件中的 extra_data_dict 中的 key 保持一致
-    "coin-cap": ('load_coin_cap', r'D:\quantclass\treadedatas\coin-coinmarketcap',)
+    "coin-cap": ('load_coin_cap', r'E:\quantclass\treadedatas\coin-coinmarketcap',)
 }
 
 min_kline_num = 168  # 最少上市多久，不满该K线根数的币剔除，即剔除刚刚上市的新币。168：标识168个小时，即：7*24
@@ -150,7 +150,7 @@ simulator_config = dict(
 # ** 全局设置及自动化 **
 # 这些设置是客观事实，基本不会影响到回测的细节，正常不用去改动
 # ====================================================================================================
-job_num = max(os.cpu_count() - 1, 1)  # 回测并行数量
+job_num = max(os.cpu_count() - 7, 1)  # 回测并行数量
 #job_num = 1  # 回测并行数量
 
 # ==== factor_col_limit 介绍 ====

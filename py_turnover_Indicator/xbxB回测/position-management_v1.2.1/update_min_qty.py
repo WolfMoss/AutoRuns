@@ -74,4 +74,8 @@ def update(proxies=None):
 
 
 if __name__ == '__main__':
+    # update(proxies={
+    #     'http': 'http://127.0.0.1:7890',
+    #     'https': 'http://127.0.0.1:7890'
+    # })
     update()

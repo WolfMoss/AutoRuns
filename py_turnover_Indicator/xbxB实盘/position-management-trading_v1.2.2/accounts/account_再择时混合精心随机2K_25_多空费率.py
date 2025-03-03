@@ -213,7 +213,7 @@ strategy_pool = [  # 策略池
 
 
 leverage = 1  # 杠杆数。我看哪个赌狗要把这里改成大于1的。高杠杆如梦幻泡影。不要想着一夜暴富，脚踏实地赚自己该赚的钱。
-black_list = ['BTCUSDT', 'ETHUSDT', 'BCHUSDT', 'LTCUSDT', 'ETCUSDT', 'LINKUSDT', 'SOLUSDT', 'AVAXUSDT', 'AAVEUSDT','DOGEUSDT']  # 拉黑名单，永远不会交易。不喜欢的币、异常的币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
+black_list = ['BTCUSDT', 'ETHUSDT','AAVEUSDT','LINKUSDT','ENAUSDT','TRXUSDT','ONDOUSDT','UNIUSDT','POLUSDT','XRPUSDT','SOLUSDT','ADAUSDT','LTCUSDT','TRUMPUSDT']  # 拉黑名单，永远不会交易。不喜欢的币、异常的币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
 white_list = []  # 如果不为空，即只交易这些币，只在这些币当中进行选币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
 # rebalance_mode =
 is_pure_long = False  # 纯多设置(https://bbs.quantclass.cn/thread/36230)

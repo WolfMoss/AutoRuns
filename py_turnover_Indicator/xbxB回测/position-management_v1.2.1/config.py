@@ -82,11 +82,11 @@ strategy_pool = [  # 策略池
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 32, 'pct:<0.8')
+                    ('ZfStd', 32, 'pct:<0.8'),
                 ],
-                "filter_list_post": [
-                    ('fundingfiter', 1, 'val:>=-0.019', False),
-                ],
+                # "filter_list_post": [
+                #     ('zjfundingfiter', 10, 'val:>=-0.019', True),
+                # ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
             {
@@ -106,11 +106,11 @@ strategy_pool = [  # 策略池
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 1536, 'pct:<0.8')
+                    ('ZfStd', 1536, 'pct:<0.8'),
                 ],
-                "filter_list_post": [
-                    ('fundingfiter', 1, 'val:>=-0.019', False),
-                ],
+                # "filter_list_post": [
+                #     ('zjfundingfiter', 10, 'val:>=-0.019', True),
+                # ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
         ],

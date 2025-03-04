@@ -19,7 +19,7 @@ from core.utils.path_kit import get_folder_path
 # ====================================================================================================
 # region 回测策略细节配置
 start_date = '2022-01-01 00:00:00'  # 回测开始时间
-end_date = '2025-01-07'  # 回测结束时间
+end_date = '2024-12-27'  # 回测结束时间
 
 # ====================================================================================================
 # ** 数据配置 **
@@ -27,10 +27,10 @@ end_date = '2025-01-07'  # 回测结束时间
 # 数据存储路径，填写绝对路径
 # 使用官方准备的预处理数据，专门用于本框架回测使用，大幅提高速度
 # 现货和合约1小时预处理数据（pkl格式）：https://www.quantclass.cn/data/coin/coin-binance-spot-swap-preprocess-pkl-1h
-pre_data_path = r'D:\quantclass\treadedatas\coin-binance-spot-swap-preprocess-pkl-1h'
+pre_data_path = r'E:\quantclass\treadedatas\coin-binance-spot-swap-preprocess-pkl-1h'
 data_source_dict = {
     # 数据源的标签,需要与因子文件中的 extra_data_dict 中的 key 保持一致
-    "coin-cap": ('load_coin_cap', r'D:\quantclass\treadedatas\coin-coinmarketcap',)
+    "coin-cap": ('load_coin_cap', r'E:\quantclass\treadedatas\coin-coinmarketcap',)
 }
 
 min_kline_num = 168  # 最少上市多久，不满该K线根数的币剔除，即剔除刚刚上市的新币。168：标识168个小时，即：7*24
@@ -82,10 +82,10 @@ strategy_pool = [  # 策略池
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 32, 'pct:<0.8'),
+                    ('ZfStd', 32, 'pct:<0.8')
                 ],
                 # "filter_list_post": [
-                #     ('zjfundingfiter', 10, 'val:>=-0.019', True),
+                #     ('zjfundingfiter', 10, 'val:>=-0.019', False),
                 # ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
@@ -106,10 +106,10 @@ strategy_pool = [  # 策略池
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 1536, 'pct:<0.8'),
+                    ('ZfStd', 1536, 'pct:<0.8')
                 ],
                 # "filter_list_post": [
-                #     ('zjfundingfiter', 10, 'val:>=-0.019', True),
+                #     ('zjfundingfiter', 10, 'val:>=-0.019', False),
                 # ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
@@ -188,7 +188,7 @@ job_num = max(os.cpu_count() - 1, 1)  # 回测并行数量
 #job_num = 1  # 回测并行数量
 
 # ==== factor_col_limit 介绍 ====
-factor_col_limit = 128  # 内存优化选项，一次性计算多少列因子。64是 16GB内存 电脑的典型值
+factor_col_limit = 32  # 内存优化选项，一次性计算多少列因子。64是 16GB内存 电脑的典型值
 # - 数字越大，计算速度越快，但同时内存占用也会增加。
 # - 该数字是在 "因子数量 * 参数数量" 的基础上进行优化的。
 #   - 例如，当你遍历 200 个因子，每个因子有 10 个参数，总共生成 2000 列因子。

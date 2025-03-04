@@ -19,7 +19,7 @@ from core.utils.path_kit import get_folder_path
 # ====================================================================================================
 # region 回测策略细节配置
 start_date = '2022-01-01 00:00:00'  # 回测开始时间
-end_date = '2024-12-27'  # 回测结束时间
+end_date = '2025-2-27'  # 回测结束时间
 
 # ====================================================================================================
 # ** 数据配置 **
@@ -82,7 +82,8 @@ strategy_pool = [  # 策略池
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 32, 'pct:<0.8')
+                    ('ZfStd', 32, 'pct:<0.8'),
+                    ('macdandkdj', [30, 90, 36, 45, 15], 'val:==1'),
                 ],
                 # "filter_list_post": [
                 #     ('zjfundingfiter', 10, 'val:>=-0.019', False),
@@ -106,7 +107,8 @@ strategy_pool = [  # 策略池
                     ('CirculatingMcap', True, 1, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
                 "filter_list": [
-                    ('ZfStd', 1536, 'pct:<0.8')
+                    ('ZfStd', 1536, 'pct:<0.8'),
+                    ('macdandkdj', [30, 90, 36, 45, 15], 'val:==1'),
                 ],
                 # "filter_list_post": [
                 #     ('zjfundingfiter', 10, 'val:>=-0.019', False),
@@ -138,7 +140,8 @@ strategy_pool = [  # 策略池
                 ],
                 "filter_list": [
                     ('QuoteVolumeMean', x, 'pct:<0.2', False),
-                    ('Ma', [168,50], 'val:==1'),
+                    #('Ma', [168,50], 'val:==1'),
+                    #('macdandkdj', [20, 60, 24, 30, 10], 'val:==-1'),
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             } for x in [300,]

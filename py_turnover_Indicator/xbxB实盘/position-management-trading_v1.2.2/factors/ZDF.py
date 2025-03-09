@@ -9,7 +9,9 @@
 
 Author: 邢不行
 """
+import os
 import numpy as np
+import pandas as pd
 
 
 def signal(*args):
@@ -17,11 +19,7 @@ def signal(*args):
     n = args[1]
     factor_name = args[2]
 
-    df['mtm'] = df['close'].pct_change()
-    df['zf'] = (df['high'] - df['low']) / df['open']
-    df['zf'] = np.where(df['mtm'] > 0, df['zf'], -df['zf'])
-    df['std'] = df['zf'].rolling(n, min_periods=1).std()
-
-    df[factor_name] = df['std']
+    # 计算n周期收盘价涨跌幅
+    df[factor_name] = df['close'].pct_change(n)
 
     return df

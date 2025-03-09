@@ -1,10 +1,15 @@
-# -*- coding: utf-8 -*-
 """
-中性策略框架 | 邢不行 | 2024分享会
-author: 邢不行
+邢不行™️ 策略分享会
+仓位管理框架
+
+版权所有 ©️ 邢不行
 微信: xbx6660
+
+本代码仅供个人学习使用，未经授权不得复制、修改或用于商业用途。
+
+Author: 邢不行
 """
-import numpy as np
+import numpy as np 
 
 
 def signal(*args):

@@ -9,7 +9,9 @@
 
 Author: 邢不行
 """
+import os
 import numpy as np
+import pandas as pd
 
 
 def signal(*args):
@@ -17,11 +19,11 @@ def signal(*args):
     n = args[1]
     factor_name = args[2]
 
-    df['mtm'] = df['close'].pct_change()
-    df['zf'] = (df['high'] - df['low']) / df['open']
-    df['zf'] = np.where(df['mtm'] > 0, df['zf'], -df['zf'])
-    df['std'] = df['zf'].rolling(n, min_periods=1).std()
+    df['tp'] = (df['high'] + df['low'] + df['close']) / 3
+    df['min'] = df['tp'].rolling(n, min_periods=1).min()
+    df['max'] = df['tp'].rolling(n, min_periods=1).max()
+    df['minmax'] = (df['tp'] - df['min']) / (df['max'] - df['min'])
 
-    df[factor_name] = df['std']
+    df[factor_name] = df['minmax'] - 0.5
 
     return df

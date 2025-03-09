@@ -9,7 +9,6 @@
 
 Author: 邢不行
 """
-import numpy as np
 
 
 def signal(*args):
@@ -17,11 +16,8 @@ def signal(*args):
     n = args[1]
     factor_name = args[2]
 
-    df['mtm'] = df['close'].pct_change()
-    df['zf'] = (df['high'] - df['low']) / df['open']
-    df['zf'] = np.where(df['mtm'] > 0, df['zf'], -df['zf'])
-    df['std'] = df['zf'].rolling(n, min_periods=1).std()
+    df['bias'] = df['close'] / df['close'].rolling(n, min_periods=1).mean() - 1
 
-    df[factor_name] = df['std']
+    df[factor_name] = df['bias'].rolling(n, min_periods=1).rank(ascending=True, pct=True)
 
     return df

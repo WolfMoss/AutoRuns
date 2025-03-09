@@ -24,7 +24,7 @@ def main():
     limit = 1000  # 每次获取的数据量
 
     # 使用 CCXT 获取历史数据（示例中使用 binance 交易所）
-    fetcher = CCTXData('binance', proxy='http://127.0.0.1:7890')
+    fetcher = CCTXData('binance', proxy='http://wolfmoss.top:8016')
     print("正在获取历史数据...")
     data = fetcher.get_historical_data(symbol, timeframe, since, limit, cache_file="datas")
 

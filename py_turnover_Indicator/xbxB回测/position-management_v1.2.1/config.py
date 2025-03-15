@@ -53,9 +53,9 @@ strategy_config = {
     'hold_period': '1H',  # *必填。聚合后策略持仓周期。目前回测支持日线级别、小时级别。例：1H，6H，3D，7D......
     'params': {
         'cap_ratios': [
-            5 / 10,5 / 10,
+            #6.6/10 , 3.4/10,
             #10 / 10,
-            #5/10, 2.5/10, 2.5/10,
+            3.3/10, 3.3/10, 3.3/10,
         ]
     }
 }
@@ -85,9 +85,6 @@ strategy_pool = [  # 策略池
                 "filter_list": [
                     ('ZfStd', 32, 'pct:<0.8')
                 ],
-                "filter_list_post": [
-                    ('zjfundingfiter', 1, 'val:>=-0.019', False),
-                ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
             {
@@ -109,9 +106,6 @@ strategy_pool = [  # 策略池
                 "filter_list": [
                     ('ZfStd', 1536, 'pct:<0.8')
                 ],
-                "filter_list_post": [
-                    ('zjfundingfiter', 1, 'val:>=-0.019', False),
-                ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
         ],
@@ -125,7 +119,7 @@ strategy_pool = [  # 策略池
                 "strategy": "Strategy_bollinger空头",
                 "offset_list": range(0, 24, 1),
                 "hold_period": '24H',
-                "is_use_spot": False,
+                #"is_use_spot": False,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
                 'cap_weight': 1,
                 'long_cap_weight': 0,
@@ -151,6 +145,90 @@ strategy_pool = [  # 策略池
         ],
         # # 配置再择时之后，可以使用 re_timing.py 进行再择时的资金曲线模拟
         re_timing={'name': 'Bolling1', 'params': [240]}  # 可选，配置再择时策略
+    ),
+    dict(
+        name='浪莎',
+        strategy_list=[
+            # === 1.大学生多头(资金占比0.5)
+            {
+                # 策略名称。与strategy目录中的策略文件名保持一致。
+                "strategy": "Strategy_大学生",
+                "offset_list": [22],  # 只选部分offset[1, 3, 6]；
+                "hold_period": "24H",  # 小时级别可选1H到24H；也支持1D交易日级别
+                "is_use_spot": True,  # 多头支持交易现货；
+                # 资金权重。程序会自动根据这个权重计算你的策略占比
+                'cap_weight': 1 / 2,
+                'long_cap_weight': 1,  # 可以多空比例不同，多空不平衡对策略收益影响大
+                'short_cap_weight': 0,
+                # 选币数量
+                'long_select_coin_num': 0.1,  # 可适当减少选币数量，对策略收益影响大
+                'short_select_coin_num': 0,  # 四种形式：整数， 小数，'long_nums', 区间选币：(0.1, 0.2), (1, 3)
+                # 选币因子信息列表，用于2_选币_单offset.py，3_计算多offset资金曲线.py共用计算资金曲线
+                "factor_list": [
+                    ('CirculatingMcap', True, 1, 1),  # 多空因子名（和factors文件中相同），排序方式，参数，权重。支持多空分离，多空选币因子不一样；
+                ],
+                "filter_list": [
+                    ('ZfStd', x, 'pct:<0.8'),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
+                ],
+                "filter_list_post": [
+                    ('ZfAbsMean', x, 'val:<0.5'),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
+                ],
+            } for x in [28, 120]
+        ] + [
+            # === 2.黄果树空头(资金占比0.5)
+            # =2.1 先使用QuoteVolumeMean，再使用动量因子，资金占比为空头的0.75(总资金的0.375)
+            {
+                # 策略名称。与strategy目录中的策略文件名保持一致。
+                "strategy": "Strategy_黄果树",
+                "offset_list": [3],  # 只选部分offset[1, 3, 6]；
+                "hold_period": "24H",  # 小时级别可选1H到24H；也支持1D交易日级别
+                #"is_use_spot": False,  # 多头支持交易现货；
+                # 资金权重。程序会自动根据这个权重计算你的策略占比
+                'cap_weight': 0.75,
+                'long_cap_weight': 0,  # 可以多空比例不同，多空不平衡对策略收益影响大
+                'short_cap_weight': 1,
+                # 选币数量
+                'long_select_coin_num': 0,  # 可适当减少选币数量，对策略收益影响大
+                'short_select_coin_num': 0.5,  # 四种形式：整数， 小数，'long_nums', 区间选币：(0.1, 0.2), (1, 3)
+                # 选币因子信息列表，用于2_选币_单offset.py，3_计算多offset资金曲线.py共用计算资金曲线
+                "factor_list": [
+                    ('BiasQ', False, 336, 1),  # 多空因子名（和factors文件中相同），排序方式，参数，权重。支持多空分离，多空选币因子不一样；
+                ],
+                "filter_list": [
+                    ('Bias_signal', (336, -0.15), 'val:==1', True),
+                    ('QuoteVolumeMean', 336, 'pct:<0.2', False),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
+                ],
+                "filter_list_post": [
+                    ('ZfAbsMean', 336, 'val:<0.5'),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
+                ],
+            },
+            # =2.2 先使用动量因子，再使用QuoteVolumeMean，资金占比为空头的0.25(总资金的0.125)
+            {
+                # 策略名称。与strategy目录中的策略文件名保持一致。
+                "strategy": "Strategy_黄果树",
+                "offset_list": [21],  # 只选部分offset[1, 3, 6]；
+                "hold_period": "24H",  # 小时级别可选1H到24H；也支持1D交易日级别
+                #"is_use_spot": False,  # 多头支持交易现货；
+                # 资金权重。程序会自动根据这个权重计算你的策略占比
+                'cap_weight': 0.25,
+                'long_cap_weight': 0,  # 可以多空比例不同，多空不平衡对策略收益影响大
+                'short_cap_weight': 1,
+                # 选币数量
+                'long_select_coin_num': 0,  # 可适当减少选币数量，对策略收益影响大
+                'short_select_coin_num': 0.5,  # 四种形式：整数， 小数，'long_nums', 区间选币：(0.1, 0.2), (1, 3)
+                # 选币因子信息列表，用于2_选币_单offset.py，3_计算多offset资金曲线.py共用计算资金曲线
+                "factor_list": [
+                    ('QuoteVolumeMean', True, 504, 1),  # 多空因子名（和factors文件中相同），排序方式，参数，权重。支持多空分离，多空选币因子不一样；
+                ],
+                "filter_list": [
+                    ('Bias_signal', (504, -0.15), 'val:==1', True),
+                    ('BiasQ', 504, 'pct:<0.2'),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
+                ],
+                "filter_list_post": [
+                    ('ZfAbsMean', 504, 'val:<0.5'),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
+                ],
+            },
+        ],
     ),
 ]
 

@@ -27,10 +27,10 @@ end_date = '2025-2-27'  # 回测结束时间
 # 数据存储路径，填写绝对路径
 # 使用官方准备的预处理数据，专门用于本框架回测使用，大幅提高速度
 # 现货和合约1小时预处理数据（pkl格式）：https://www.quantclass.cn/data/coin/coin-binance-spot-swap-preprocess-pkl-1h
-pre_data_path = r'E:\quantclass\treadedatas\coin-binance-spot-swap-preprocess-pkl-1h'
+pre_data_path = r'D:\quantclass\treadedatas\coin-binance-spot-swap-preprocess-pkl-1h'
 data_source_dict = {
     # 数据源的标签,需要与因子文件中的 extra_data_dict 中的 key 保持一致
-    "coin-cap": ('load_coin_cap', r'E:\quantclass\treadedatas\coin-coinmarketcap',)
+    "coin-cap": ('load_coin_cap', r'D:\quantclass\treadedatas\coin-coinmarketcap',)
 }
 
 min_kline_num = 1  # 最少上市多久，不满该K线根数的币剔除，即剔除刚刚上市的新币。168：标识168个小时，即：7*24
@@ -53,9 +53,9 @@ strategy_config = {
     'hold_period': '1H',  # *必填。聚合后策略持仓周期。目前回测支持日线级别、小时级别。例：1H，6H，3D，7D......
     'params': {
         'cap_ratios': [
-            #6 / 10,4 / 10,
+            #6.6/10 , 3.4/10,
             #10 / 10,
-            5/10, 2.5/10, 2.5/10,
+            3.3/10, 3.3/10, 3.3/10,
         ]
     }
 }
@@ -85,9 +85,6 @@ strategy_pool = [  # 策略池
                 "filter_list": [
                     ('ZfStd', 32, 'pct:<0.8')
                 ],
-                "filter_list_post": [
-                    ('zjfundingfiter', 1, 'val:>=-0.019', False),
-                ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
             {
@@ -109,9 +106,6 @@ strategy_pool = [  # 策略池
                 "filter_list": [
                     ('ZfStd', 1536, 'pct:<0.8')
                 ],
-                "filter_list_post": [
-                    ('zjfundingfiter', 1, 'val:>=-0.019', False),
-                ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
             },
         ],
@@ -125,7 +119,7 @@ strategy_pool = [  # 策略池
                 "strategy": "Strategy_bollinger空头",
                 "offset_list": range(0, 24, 1),
                 "hold_period": '24H',
-                "is_use_spot": False,
+                #"is_use_spot": False,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
                 'cap_weight': 1,
                 'long_cap_weight': 0,
@@ -188,7 +182,7 @@ strategy_pool = [  # 策略池
                 "strategy": "Strategy_黄果树",
                 "offset_list": [3],  # 只选部分offset[1, 3, 6]；
                 "hold_period": "24H",  # 小时级别可选1H到24H；也支持1D交易日级别
-                "is_use_spot": False,  # 多头支持交易现货；
+                #"is_use_spot": False,  # 多头支持交易现货；
                 # 资金权重。程序会自动根据这个权重计算你的策略占比
                 'cap_weight': 0.75,
                 'long_cap_weight': 0,  # 可以多空比例不同，多空不平衡对策略收益影响大
@@ -201,7 +195,7 @@ strategy_pool = [  # 策略池
                     ('BiasQ', False, 336, 1),  # 多空因子名（和factors文件中相同），排序方式，参数，权重。支持多空分离，多空选币因子不一样；
                 ],
                 "filter_list": [
-                    ('Bias_signal', (10 * 24, -0.15), 'val:==1', False),
+                    ('Bias_signal', (336, -0.15), 'val:==1', True),
                     ('QuoteVolumeMean', 336, 'pct:<0.2', False),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
                 ],
                 "filter_list_post": [
@@ -214,7 +208,7 @@ strategy_pool = [  # 策略池
                 "strategy": "Strategy_黄果树",
                 "offset_list": [21],  # 只选部分offset[1, 3, 6]；
                 "hold_period": "24H",  # 小时级别可选1H到24H；也支持1D交易日级别
-                "is_use_spot": False,  # 多头支持交易现货；
+                #"is_use_spot": False,  # 多头支持交易现货；
                 # 资金权重。程序会自动根据这个权重计算你的策略占比
                 'cap_weight': 0.25,
                 'long_cap_weight': 0,  # 可以多空比例不同，多空不平衡对策略收益影响大
@@ -227,7 +221,7 @@ strategy_pool = [  # 策略池
                     ('QuoteVolumeMean', True, 504, 1),  # 多空因子名（和factors文件中相同），排序方式，参数，权重。支持多空分离，多空选币因子不一样；
                 ],
                 "filter_list": [
-                    ('Bias_signal', (10 * 24, -0.15), 'val:==1', False),
+                    ('Bias_signal', (504, -0.15), 'val:==1', True),
                     ('BiasQ', 504, 'pct:<0.2'),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
                 ],
                 "filter_list_post": [
@@ -240,7 +234,7 @@ strategy_pool = [  # 策略池
 
 
 leverage = 1  # 杠杆数。我看哪个赌狗要把这里改成大于1的。高杠杆如梦幻泡影。不要想着一夜暴富，脚踏实地赚自己该赚的钱。
-black_list = ['BTCUSDT', 'ETHUSDT','AAVEUSDT','LINKUSDT','ENAUSDT','TRXUSDT','ONDOUSDT','UNIUSDT','POLUSDT','XRPUSDT','SOLUSDT','ADAUSDT','LTCUSDT','TRUMPUSDT']  # 拉黑名单，永远不会交易。不喜欢的币、异常的币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
+black_list = ['BTC-USDT', 'ETH-USDT','AAVE-USDT','LINK-USDT','ENA-USDT','TRX-USDT','ONDO-USDT','UNI-USDT','POL-USDT','XRP-USDT','SOL-USDT','ADA-USDT','LTC-USDT','TRUMP-USDT']  # 拉黑名单，永远不会交易。不喜欢的币、异常的币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
 white_list = []  # 如果不为空，即只交易这些币，只在这些币当中进行选币。例：LUNA-USDT, 这里与实盘不太一样，需要有'-'
 # rebalance_mode =
 is_pure_long = False  # 纯多设置(https://bbs.quantclass.cn/thread/36230)
@@ -278,7 +272,7 @@ job_num = max(os.cpu_count() - 1, 1)  # 回测并行数量
 #job_num = 1  # 回测并行数量
 
 # ==== factor_col_limit 介绍 ====
-factor_col_limit = 16  # 内存优化选项，一次性计算多少列因子。64是 16GB内存 电脑的典型值
+factor_col_limit = 128  # 内存优化选项，一次性计算多少列因子。64是 16GB内存 电脑的典型值
 # - 数字越大，计算速度越快，但同时内存占用也会增加。
 # - 该数字是在 "因子数量 * 参数数量" 的基础上进行优化的。
 #   - 例如，当你遍历 200 个因子，每个因子有 10 个参数，总共生成 2000 列因子。

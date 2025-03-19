@@ -14,8 +14,7 @@ from vnpy.trader.constant import Exchange, Interval
 from vnpy_ctastrategy.backtesting import OptimizationSetting
 
 from engine import BacktestEngine
-from strategies import BaseStrategy, SampleStrategy
-from utils.performance import plot_performance
+from strategies import SampleStrategy
 from config import BACKTEST_CONFIG, DATA_DIR, SYMBOLS, TIMEFRAME, STRATEGY_PARAMS
 
 # 配置日志
@@ -41,7 +40,16 @@ def run_single_backtest(strategy_class, params=None):
     # 创建回测引擎
     engine = BacktestEngine(BACKTEST_CONFIG, DATA_DIR)
     
-    # 加载所有交易对数据
+    # 使用默认参数或指定参数
+    if params is None:
+        strategy_name = strategy_class.__name__
+        params = STRATEGY_PARAMS.get(strategy_name, {})
+    
+    logger.info(f"添加策略: {strategy_class.__name__}, 参数: {params}")
+    # 先添加策略
+    engine.add_strategy(strategy_class, params)
+    
+    # 再加载数据
     for symbol in SYMBOLS:
         logger.info(f"正在加载交易对数据: {symbol}")
         # 如果symbol包含交易所后缀，去除它
@@ -51,15 +59,6 @@ def run_single_backtest(strategy_class, params=None):
             symbol=symbol,
             interval=Interval(TIMEFRAME)
         )
-    
-    # 使用默认参数或指定参数
-    if params is None:
-        strategy_name = strategy_class.__name__
-        params = STRATEGY_PARAMS.get(strategy_name, {})
-    
-    logger.info(f"添加策略: {strategy_class.__name__}, 参数: {params}")
-    # 添加策略
-    engine.add_strategy(strategy_class, params)
     
     # 运行回测
     logger.info("开始运行回测...")

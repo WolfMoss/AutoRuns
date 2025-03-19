@@ -11,14 +11,17 @@ from typing import Dict, List, Optional, Type
 from vnpy.trader.constant import Exchange, Interval
 from vnpy.trader.object import BarData
 from vnpy.trader.utility import BarGenerator, ArrayManager
+from vnpy_ctastrategy import CtaTemplate
 from vnpy_ctastrategy.backtesting import BacktestingEngine, OptimizationSetting
 
 from .loader import DataLoader
-from strategies.base_strategy import BaseStrategy
 from utils.performance import calculate_statistics
 
 import logging
 logger = logging.getLogger(__name__)
+
+import vnpy
+print(f"VNPy版本: {vnpy.__version__}")
 
 class BacktestEngine:
     """回测引擎，封装VNPY的回测功能"""
@@ -94,7 +97,7 @@ class BacktestEngine:
         self.history_bars.extend(bars)
         return True
     
-    def add_strategy(self, strategy_class: Type[BaseStrategy], strategy_params: Dict = None):
+    def add_strategy(self, strategy_class: Type[CtaTemplate], strategy_params: Dict = None):
         """
         添加策略
         
@@ -104,7 +107,17 @@ class BacktestEngine:
         if not strategy_params:
             strategy_params = {}
         
+        # 打印策略参数
+        print(f"添加策略: {strategy_class.__name__}, 参数: {strategy_params}")
+        
+        # 添加策略到回测引擎
         self.engine.add_strategy(strategy_class, strategy_params)
+        
+        # 验证策略是否添加成功
+        if hasattr(self.engine, 'strategy') and self.engine.strategy is not None:
+            print(f"策略添加成功: {self.engine.strategy.__class__.__name__}")
+        else:
+            print("警告: 策略添加可能失败，engine.strategy为None")
     
     def run_backtest(self):
         """运行回测"""
@@ -118,11 +131,42 @@ class BacktestEngine:
         # 将历史数据按照时间排序
         self.history_bars.sort(key=lambda x: x.datetime)
         
-        # 设置引擎的历史数据，需要是列表而不是字典
-        self.engine.history_data = self.history_bars
+        # 按照vt_symbol分组数据
+        symbol_data = {}
+        for bar in self.history_bars:
+            vt_symbol = bar.vt_symbol
+            if vt_symbol not in symbol_data:
+                symbol_data[vt_symbol] = []
+            symbol_data[vt_symbol].append(bar)
         
-        # 加载数据和运行回测
-        self.engine.load_data()
+        # 打印调试信息
+        for vt_symbol, bars in symbol_data.items():
+            print(f"交易对 {vt_symbol} 的数据量: {len(bars)}")
+            print(f"数据时间范围: {bars[0].datetime} 到 {bars[-1].datetime}")
+        
+        # 获取主交易对
+        main_symbol = list(symbol_data.keys())[0]
+        print(f"使用主交易对: {main_symbol}")
+        
+        # 使用feed_data方法直接馈送数据到引擎
+        main_data = symbol_data[main_symbol]
+        main_data.sort(key=lambda x: x.datetime)
+        
+        try:
+            # 尝试使用feed_data方法
+            print("尝试使用feed_data方法")
+            self.engine.feed_data(main_data)
+        except Exception as e:
+            print(f"feed_data方法失败: {e}")
+            # 如果失败，尝试直接设置数据
+            try:
+                print("尝试直接设置history_data")
+                self.engine.history_data = main_data
+            except Exception as e2:
+                print(f"直接设置history_data失败: {e2}")
+                return None, None
+        
+        # 运行回测
         self.engine.run_backtesting()
         
         # 计算回测结果
@@ -178,7 +222,7 @@ class BacktestEngine:
         # 使用VNPY的绘图功能
         self.engine.show_chart(save_path=save_path)
         
-    def optimize(self, strategy_class: Type[BaseStrategy], setting: OptimizationSetting):
+    def optimize(self, strategy_class: Type[CtaTemplate], setting: OptimizationSetting):
         """
         参数优化
         
@@ -194,4 +238,8 @@ class BacktestEngine:
         results = self.engine.run_optimization(setting, output=True)
         
         logger.info("参数优化完成")
-        return results 
+        return results
+
+    def print_available_methods(self):
+        """打印VNPY回测引擎的可用方法"""
+        print([method for method in dir(self.engine) if not method.startswith('_')]) 

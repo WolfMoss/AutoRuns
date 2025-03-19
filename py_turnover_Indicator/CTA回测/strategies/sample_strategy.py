@@ -9,12 +9,12 @@ from typing import Dict, List, Optional
 from vnpy.trader.constant import Interval
 from vnpy.trader.object import BarData, TickData
 from vnpy.trader.utility import BarGenerator, ArrayManager
+# 直接继承官方的CTA策略类
+from vnpy_ctastrategy import CtaTemplate
 from vnpy_ctastrategy.backtesting import BacktestingEngine, OptimizationSetting
 
-from .base_strategy import BaseStrategy
 
-
-class SampleStrategy(BaseStrategy):
+class SampleStrategy(CtaTemplate):
     """
     简单双均线交叉策略
     当快速均线上穿慢速均线时买入
@@ -28,6 +28,8 @@ class SampleStrategy(BaseStrategy):
     # 策略变量
     fast_ma = 0.0  # 快速均线
     slow_ma = 0.0  # 慢速均线
+    fast_ma_prev = 0.0  # 上一期快速均线
+    slow_ma_prev = 0.0  # 上一期慢速均线
     
     # 参数列表，会被进行参数优化
     parameters = ["fast_window", "slow_window"]
@@ -41,18 +43,58 @@ class SampleStrategy(BaseStrategy):
         """
         super().__init__(cta_engine, strategy_name, vt_symbol, setting)
         
+        # 初始化技术指标计算工具
+        self.bg = BarGenerator(self.on_bar)
+        self.am = ArrayManager()
+        
         # 将参数传递进来
         if "fast_window" in setting:
             self.fast_window = setting["fast_window"]
         if "slow_window" in setting:
             self.slow_window = setting["slow_window"]
+
+        print("初始化成功")
     
-    def calculate_signals(self, bar: BarData):
+    def on_init(self):
         """
-        计算交易信号
+        策略初始化完成时调用
         """
-        # 计算技术指标
+        self.write_log("策略初始化完成")
+        
+    def on_start(self):
+        """
+        策略启动时调用
+        """
+        self.write_log("策略启动")
+    
+    def on_stop(self):
+        """
+        策略停止时调用
+        """
+        self.write_log("策略停止")
+        
+    def on_tick(self, tick: TickData):
+        """
+        Tick数据更新时调用
+        """
+        self.bg.update_tick(tick)
+    
+    def on_bar(self, bar: BarData):
+        """
+        K线数据更新时调用的方法
+        """
+
+        
+        # 更新技术指标
         am = self.am
+        am.update_bar(bar)
+        
+        if not am.inited:
+            return
+        
+        # 保存上一期均线数据
+        self.fast_ma_prev = self.fast_ma
+        self.slow_ma_prev = self.slow_ma
         
         # 计算快速均线
         self.fast_ma = am.sma(self.fast_window)
@@ -63,9 +105,9 @@ class SampleStrategy(BaseStrategy):
         if not self.fast_ma or not self.slow_ma:
             return
         
-        # 判断均线交叉
-        cross_over = (self.fast_ma > self.slow_ma) and (self.fast_ma <= self.slow_ma)
-        cross_below = (self.fast_ma < self.slow_ma) and (self.fast_ma >= self.slow_ma)
+        # 判断均线交叉 - 修正后的逻辑
+        cross_over = (self.fast_ma > self.slow_ma) and (self.fast_ma_prev <= self.slow_ma_prev)
+        cross_below = (self.fast_ma < self.slow_ma) and (self.fast_ma_prev >= self.slow_ma_prev)
         
         # 根据交叉信号交易
         if cross_over:  # 金叉买入

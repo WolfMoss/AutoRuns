@@ -11,7 +11,7 @@ DATA_DIR = os.path.join(ROOT_DIR, "datas")  # 修正为当前目录下的datas�
 
 # 回测参数配置
 BACKTEST_CONFIG = {
-    "start_date": "2023-01-01",  # 回测开始日期
+    "start_date": "2022-12-21",  # 回测开始日期
     "end_date": "2025-01-01",    # 回测结束日期
     "initial_capital": 100000,   # 初始资金
     "commission_rate": 0.0002,   # 手续费率
@@ -25,9 +25,9 @@ BACKTEST_CONFIG = {
 
 # 交易对配置
 SYMBOLS = [
-    "BTC_USDT",    # 简化交易对名称
-    "ETH_USDT",
-    "BNB_USDT",
+    # "BTC_USDT",    # 简化交易对名称
+    # "ETH_USDT",
+    # "BNB_USDT",
     "DOGE_USDT",
 ]
 

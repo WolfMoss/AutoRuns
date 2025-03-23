@@ -14,6 +14,7 @@ def signal(*args):
 
 
     df[factor_name] = df['funding_fee'].rolling(n, min_periods=1).max()
-
+    # 空值填θ
+    df[factor_name].fillna(0, inplace=True)
 
     return df

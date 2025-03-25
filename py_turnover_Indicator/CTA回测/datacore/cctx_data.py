@@ -75,9 +75,10 @@ class CCTXData:
         # 获取数据结束后，构造DataFrame并保存到CSV
         import pandas as pd
         df = pd.DataFrame(all_ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
+        df["date"] = pd.to_datetime(df["timestamp"], unit="ms").dt.strftime("%Y-%m-%d %H:%M:%S")
         df["datetime"] = pd.to_datetime(df["timestamp"], unit="ms").dt.strftime("%Y-%m-%d %H:%M:%S")
         try:
-            df[["datetime", "open", "high", "low", "close", "volume"]].to_csv(file_path, index=False, encoding="utf-8")
+            df[["date","datetime", "open", "high", "low", "close", "volume"]].to_csv(file_path, index=False, encoding="utf-8")
             print(f"历史数据已保存到缓存文件 {file_path}")
         except Exception as e:
             print("保存缓存失败:", e)

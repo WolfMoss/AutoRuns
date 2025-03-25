@@ -14,7 +14,7 @@ def fetch_symbol(symbol, timeframe, since, limit, proxy, cache_dir):
 
 def main():
     # 设置多个品种，例如 BTC/USDT、ETH/USDT、BNB/USDT
-    symbols = ['SWARMS/USDT',]
+    symbols = ['DOGE/USDT',]
     timeframe = '1h'
     # 注意：时间戳单位为毫秒
     since = int(datetime.datetime(2023, 1, 1).timestamp() * 1000)

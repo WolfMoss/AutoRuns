@@ -51,7 +51,8 @@ def main():
         "datas/BTC_USDT_1h.csv",
         "datas/ETH_USDT_1h.csv",
         "datas/BNB_USDT_1h.csv",
-        "datas/DOGE_USDT_1h.csv"
+        "datas/DOGE_USDT_1h.csv",
+        "datas/SWARMS_USDT_1h.csv"
     ]
     for file_path in file_list:
         process_file(file_path)

@@ -36,12 +36,12 @@ def dynamic_leverage(equity: pd.Series, *args) -> pd.Series:
 
     # ===== 计算开平仓信号
     # 1.equity上穿ma 开多
-    long_con1 = equity.shift() < ma.shift()
+    long_con1 = equity.shift() < ma.shift(2)
     long_con2 = equity > ma
-    leverage.loc[long_con1 & long_con2] = 1
+    leverage.loc[long_con1 & long_con2] = 1.1
 
     # 2.equity下穿down 平多
-    short_con1 = equity.shift() > down.shift()
+    short_con1 = equity.shift(2) > down.shift()
     short_con2 = equity < down
     leverage.loc[short_con1 & short_con2] = 0
 

@@ -64,7 +64,7 @@ strategy_config = {
 
 strategy_pool = [  # 策略池
     dict(
-        name='大学生选币策略-Bias-168',
+        name='大学生选币策略-Bolling2-176',
         strategy_list=[
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
@@ -113,41 +113,70 @@ strategy_pool = [  # 策略池
         ],
         # 配置再择时之后，可以使用 re_timing.py 进行再择时的资金曲线模拟
         #re_timing={'name': 'Bias', 'params': [168]},  # 可选，配置再择时策略
-        re_timing = {'name': 'Bolling1', 'params': [240]}  # 可选，配置再择时策略
+        re_timing = {'name': 'Bolling2', 'params': [88*2]}  # 可选，配置再择时策略
     ),
     dict(
-        name='黄果树-Bolling1',
-        strategy_list=[{
-                "strategy": "Strategy_bollinger空头",
+        name='空头策略-CCI-240',
+        strategy_list=[
+            # === 空头策略
+            {
+                "strategy": f"Strategy_空头_{x}",
                 "offset_list": range(0, 24, 1),
                 "hold_period": '24H',
-                #"is_use_spot": False,
-                # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
-                'cap_weight': 1,
+                "is_use_spot": False,
+                'cap_weight': 1 / 2,
                 'long_cap_weight': 0,
                 'short_cap_weight': 1,
                 'long_select_coin_num': 0,
-                'short_select_coin_num': 0.2,
-                # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
-                "long_factor_list": [],
-                "long_filter_list": [],
-                "short_factor_list": [
-                    ('Cci', False, 10 * 24, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
+                'short_select_coin_num': 0.5,
+                "factor_list": [
+                    ('Cci', False, x, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],
-                "short_filter_list": [
-                    ('Bias_signal', (10 * 24, -0.15), 'val:==1', False),
-                    ('QuoteVolumeMean', 10 * 24, 'pct:<0.2', False),
-                    ('zjfundingfiter',4,'val:<0.02',True),
+                "filter_list": [
+                    ('QuoteVolumeMean', x, 'pct:<0.2', False),
+                    #('Bias_signal', (x, -0.15), 'val:==1', False),
                 ],
                 "filter_list_post": [
-                    ('ZfAbsMean', 10 * 24, 'val:<0.5'),
+                    ('ZfAbsMean', x, 'val:<0.5'),
                 ],
                 "use_custom_func": False  # 使用系统内置因子计算、过滤函数
-            }
+            } for x in [220, 410]
         ],
-        # # 配置再择时之后，可以使用 re_timing.py 进行再择时的资金曲线模拟
-        re_timing={'name': 'Bolling1', 'params': [240]}  # 可选，配置再择时策略
+        re_timing={'name': 'Bolling1', 'params': [240]}
     ),
+    # dict(
+    #     name='黄果树-Bolling1',
+    #     strategy_list=[{
+    #             "strategy": "Strategy_bollinger空头",
+    #             "offset_list": range(0, 24, 1),
+    #             "hold_period": '24H',
+    #             #"is_use_spot": False,
+    #             # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
+    #             'cap_weight': 1,
+    #             'long_cap_weight': 0,
+    #             'short_cap_weight': 1,
+    #             'long_select_coin_num': 0,
+    #             'short_select_coin_num': 0.2,
+    #             # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
+    #             "long_factor_list": [],
+    #             "long_filter_list": [],
+    #             "short_factor_list": [
+    #                 ('Cci', False, 10 * 24, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
+    #             ],
+    #             "short_filter_list": [
+    #                 ('Bias_signal', (10 * 24, -0.15), 'val:==1', False),
+    #                 ('QuoteVolumeMean', 10 * 24, 'pct:<0.2', False),
+    #                 ('zjfundingfiter',4,'val:<0.02',True),
+    #             ],
+    #             "filter_list_post": [
+    #                 ('ZfAbsMean', 10 * 24, 'val:<0.5'),
+    #             ],
+    #             "use_custom_func": False  # 使用系统内置因子计算、过滤函数
+    #         }
+    #     ],
+    #     # # 配置再择时之后，可以使用 re_timing.py 进行再择时的资金曲线模拟
+    #     re_timing={'name': 'Bolling1', 'params': [240]}  # 可选，配置再择时策略
+    # ),
 ]
 
 

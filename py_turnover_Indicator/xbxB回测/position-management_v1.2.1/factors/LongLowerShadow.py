@@ -34,7 +34,7 @@ def signal(*args):
     lower_shadow_percent = np.where(bearish, (lower_shadow / df['close']) * 100, 0)
     
     # 判断是否同时满足所有条件
-    condition = bearish & (ratio >= 1) & (lower_shadow_percent >= n1)
+    condition = bearish & (ratio >= 1.5) & (lower_shadow_percent >= n1)
     
     # 将满足条件的值设为1，不满足条件的设为0
     df[factor_name] = condition.astype(int)

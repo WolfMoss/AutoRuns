@@ -1,6 +1,0 @@
-Collecting zstandard
-  Downloading zstandard-0.23.0-cp310-cp310-win_amd64.whl.metadata (3.0 kB)
-Downloading zstandard-0.23.0-cp310-cp310-win_amd64.whl (495 kB)
-   ---------------------------------------- 495.5/495.5 kB 1.6 MB/s eta 0:00:00
-Installing collected packages: zstandard
-Successfully installed zstandard-0.23.0

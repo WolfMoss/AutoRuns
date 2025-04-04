@@ -30,7 +30,7 @@ strategy_config = {  # 策略配置
     'hold_period': '1H',  # *必填。聚合后策略持仓周期。目前回测支持日线级别、小时级别。例：1H，6H，3D，7D......
     'params': {
         'cap_ratios': [
-            6 / 10,4 / 10,
+            5.5/10 , 4.5/10,
         ],  # *必填。资金分配比例。2个策略，每个策略资金占比1/2
     }
 }
@@ -100,7 +100,7 @@ strategy_pool = [  # 策略池
                 'long_cap_weight': 0,
                 'short_cap_weight': 1,
                 'long_select_coin_num': 0,
-                'short_select_coin_num': 0.5,
+                'short_select_coin_num': 0.3,
                 "factor_list": [
                     ('Cci', False, x, 1),  # 多头因子名（和factors文件中相同），排序方式，参数，权重。
                 ],

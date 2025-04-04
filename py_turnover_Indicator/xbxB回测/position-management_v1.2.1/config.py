@@ -53,9 +53,9 @@ strategy_config = {
     'hold_period': '1H',  # *必填。聚合后策略持仓周期。目前回测支持日线级别、小时级别。例：1H，6H，3D，7D......
     'params': {
         'cap_ratios': [
-            #5/10 , 5/10,
+            6/10 , 4/10,
             #10 / 10,
-            4/10, 4/10, 2/10,
+            #4/10, 3/10, 3/10,
         ]
     }
 }
@@ -69,14 +69,14 @@ strategy_pool = [  # 策略池
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
                 "strategy": "Strategy_大学生",
-                "offset_list": [12],
-                "hold_period": "24H",
+                "offset_list": [0],
+                "hold_period": "1H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
                 'cap_weight': 1,
                 'long_cap_weight': 1,
                 'short_cap_weight': 0,
-                'long_select_coin_num': 0.3,
+                'long_select_coin_num': 0.2,
                 'short_select_coin_num': 0,
                 # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
                 "factor_list": [
@@ -91,14 +91,14 @@ strategy_pool = [  # 策略池
             {
                 # 策略名称。与strategy目录中的策略文件名保持一致。
                 "strategy": "Strategy_大学生",
-                "offset_list": [3],
-                "hold_period": "24H",
+                "offset_list": [0],
+                "hold_period": "1H",
                 "is_use_spot": True,
                 # 资金权重。程序会自动根据这个权重计算你的策略占比，具体可以看1.8的直播讲解
                 'cap_weight': 1,
                 'long_cap_weight': 1,
                 'short_cap_weight': 0,
-                'long_select_coin_num': 0.3,
+                'long_select_coin_num': 0.2,
                 'short_select_coin_num': 0,
                 # 选币因子信息列表，用于`2_选币_单offset.py`，`3_计算多offset资金曲线.py`共用计算资金曲线
                 "factor_list": [
@@ -121,8 +121,8 @@ strategy_pool = [  # 策略池
             # === 空头策略
             {
                 "strategy": f"Strategy_空头_{x}",
-                "offset_list": range(0, 24, 1),
-                "hold_period": '24H',
+                "offset_list": range(0, 1, 1),
+                "hold_period": '1H',
                 "is_use_spot": False,
                 'cap_weight': 1 / 2,
                 'long_cap_weight': 0,
@@ -144,89 +144,6 @@ strategy_pool = [  # 策略池
         ],
         re_timing={'name': 'Bolling1', 'params': [240]}
     ),
-    dict(
-        name='浪莎',
-        strategy_list=[
-            # === 1.大学生多头(资金占比0.5)
-            {
-                # 策略名称。与strategy目录中的策略文件名保持一致。
-                "strategy": "Strategy_大学生",
-                "offset_list": [1],  # 只选部分offset[1, 3, 6]；
-                "hold_period": "24H",  # 小时级别可选1H到24H；也支持1D交易日级别
-                "is_use_spot": True,  # 多头支持交易现货；
-                # 资金权重。程序会自动根据这个权重计算你的策略占比
-                'cap_weight': 1 / 2,
-                'long_cap_weight': 1,  # 可以多空比例不同，多空不平衡对策略收益影响大
-                'short_cap_weight': 0,
-                # 选币数量
-                'long_select_coin_num': 0.3,  # 可适当减少选币数量，对策略收益影响大
-                'short_select_coin_num': 0,  # 四种形式：整数， 小数，'long_nums', 区间选币：(0.1, 0.2), (1, 3)
-                # 选币因子信息列表，用于2_选币_单offset.py，3_计算多offset资金曲线.py共用计算资金曲线
-                "factor_list": [
-                    ('CirculatingMcap', True, 1, 1),  # 多空因子名（和factors文件中相同），排序方式，参数，权重。支持多空分离，多空选币因子不一样；
-                ],
-                "filter_list": [
-                    ('ZfStd', x, 'pct:<0.8'),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
-                ],
-                "filter_list_post": [
-                    ('ZfAbsMean', x, 'val:<0.5'),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
-                ],
-            } for x in [16, 120]
-        ] + [
-            # === 2.黄果树空头(资金占比0.5)
-            # =2.1 先使用QuoteVolumeMean，再使用动量因子，资金占比为空头的0.75(总资金的0.375)
-            {
-                # 策略名称。与strategy目录中的策略文件名保持一致。
-                "strategy": "Strategy_黄果树",
-                "offset_list": [9],  # 只选部分offset[1, 3, 6]；
-                "hold_period": "24H",  # 小时级别可选1H到24H；也支持1D交易日级别
-                "is_use_spot": False,  # 多头支持交易现货；
-                # 资金权重。程序会自动根据这个权重计算你的策略占比
-                'cap_weight': 0.75,
-                'long_cap_weight': 0,  # 可以多空比例不同，多空不平衡对策略收益影响大
-                'short_cap_weight': 1,
-                # 选币数量
-                'long_select_coin_num': 0,  # 可适当减少选币数量，对策略收益影响大
-                'short_select_coin_num': 0.5,  # 四种形式：整数， 小数，'long_nums', 区间选币：(0.1, 0.2), (1, 3)
-                # 选币因子信息列表，用于2_选币_单offset.py，3_计算多offset资金曲线.py共用计算资金曲线
-                "factor_list": [
-                    ('MinMax', False, 216, 1),  # 多空因子名（和factors文件中相同），排序方式，参数，权重。支持多空分离，多空选币因子不一样；
-                ],
-                "filter_list": [
-                    ('QuoteVolumeMean', 216, 'pct:<0.2', False),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
-                ],
-                "filter_list_post": [
-                    ('ZfAbsMean', 216, 'val:<0.5'),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
-                ],
-            },
-            # =2.2 先使用动量因子，再使用QuoteVolumeMean，资金占比为空头的0.25(总资金的0.125)
-            {
-                # 策略名称。与strategy目录中的策略文件名保持一致。
-                "strategy": "Strategy_黄果树",
-                "offset_list": [14],  # 只选部分offset[1, 3, 6]；
-                "hold_period": "24H",  # 小时级别可选1H到24H；也支持1D交易日级别
-                "is_use_spot": False,  # 多头支持交易现货；
-                # 资金权重。程序会自动根据这个权重计算你的策略占比
-                'cap_weight': 0.25,
-                'long_cap_weight': 0,  # 可以多空比例不同，多空不平衡对策略收益影响大
-                'short_cap_weight': 1,
-                # 选币数量
-                'long_select_coin_num': 0,  # 可适当减少选币数量，对策略收益影响大
-                'short_select_coin_num': 0.5,  # 四种形式：整数， 小数，'long_nums', 区间选币：(0.1, 0.2), (1, 3)
-                # 选币因子信息列表，用于2_选币_单offset.py，3_计算多offset资金曲线.py共用计算资金曲线
-                "factor_list": [
-                    ('QuoteVolumeMean', True, 240, 1),  # 多空因子名（和factors文件中相同），排序方式，参数，权重。支持多空分离，多空选币因子不一样；
-                ],
-                "filter_list": [
-                    ('MinMax', 240, 'pct:<0.2'),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
-                ],
-                "filter_list_post": [
-                    ('ZfAbsMean', 240, 'val:<0.5'),  # 后置过滤filter_list_post，三种形式：pct, rank, val；支持多空分离，多空过滤因子不一样；
-                ],
-            },
-        ]
-    ),
-
 ]
 
 
@@ -269,7 +186,7 @@ job_num = max(os.cpu_count() - 1, 1)  # 回测并行数量
 #job_num = 1  # 回测并行数量
 
 # ==== factor_col_limit 介绍 ====
-factor_col_limit = 32  # 内存优化选项，一次性计算多少列因子。64是 16GB内存 电脑的典型值
+factor_col_limit = 16  # 内存优化选项，一次性计算多少列因子。64是 16GB内存 电脑的典型值
 # - 数字越大，计算速度越快，但同时内存占用也会增加。
 # - 该数字是在 "因子数量 * 参数数量" 的基础上进行优化的。
 #   - 例如，当你遍历 200 个因子，每个因子有 10 个参数，总共生成 2000 列因子。

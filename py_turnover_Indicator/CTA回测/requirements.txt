@@ -1,0 +1,26 @@
+# FinRL reinforcement learning framework for financial markets
+# Suitable for reinforcement learning beginners
+
+# Core dependencies
+finrl>=0.3.6
+stable-baselines3>=1.6.0
+gymnasium>=0.26.0
+
+# Data processing
+pandas>=1.5.0
+numpy>=1.21.0
+yfinance>=0.2.0
+
+# Machine learning
+scikit-learn>=1.1.0
+
+# Visualization
+matplotlib>=3.5.0
+seaborn>=0.11.0
+
+# Technical indicators
+stockstats>=0.4.1
+
+# Other tools
+jupyter>=1.0.0
+tqdm>=4.64.0 

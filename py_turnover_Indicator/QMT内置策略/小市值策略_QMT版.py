@@ -4,7 +4,7 @@ QMT小市值策略 - 使用官方API优化版
 执行频率: 周频, 每周一14:00执行
 选股: A股市值最小的10只股票, 排除ST/科创板/北交所, 股价<=20元
 交易: 等权重配置, 每只股票占总市值1/10
-使用get_market_data_ex和passorder官方API函数
+使用官方API: get_full_tick批量获取价格, get_instrument_detail获取市值
 """
 
 import datetime
@@ -27,6 +27,15 @@ def is_execution_time():
     """判断是否为执行时间(周一14:00)"""
     now = datetime.datetime.now()
     return now.weekday() == 0 and now.hour == 14 and now.minute == 0
+
+def format_stock_code(stock_code):
+    """格式化股票代码为QMT格式"""
+    if stock_code.startswith('0') or stock_code.startswith('3'):
+        return "{}.SZ".format(stock_code)
+    elif stock_code.startswith('6'):
+        return "{}.SH".format(stock_code)
+    else:
+        return stock_code
 
 def get_filtered_stocks():
     """获取过滤后的股票列表"""
@@ -71,79 +80,69 @@ def get_filtered_stocks():
         return []
 
 def get_stock_data_batch(stock_list):
-    """使用get_market_data_ex批量获取股票数据"""
+    """使用官方API批量获取股票数据"""
     try:
         log_info("开始批量获取股票数据...")
-        stock_data = []
         
-        for stock_code in stock_list:
+        # 格式化股票代码列表
+        #formatted_stocks = [format_stock_code(stock) for stock in stock_list]
+        #log_info("格式化后的股票代码示例: {}".format(formatted_stocks[:5]))
+        log_info(stock_list)
+        # 批量获取实时价格数据
+        ticks = A.ContextInfo.get_full_tick(stock_list)
+        log_info("获取到{}只股票的实时数据".format(len(ticks)))
+        
+        stock_data = []
+        processed_count = 0
+        
+        for i, original_code in enumerate(stock_list):
             try:
-                # 使用get_market_data_ex获取单个股票数据
-                # 参数: stock_code, period='1d', count=1
-                data = A.ContextInfo.get_market_data_ex([stock_code], period='1d', count=1, dividend_type='none', fill_data=True)
+                formatted_code = stock_list[i]
                 
-                if data is not None and len(data) > 0:
-                    log_info(data)
-                    # 获取最新的数据
-                    latest_data = data.iloc[-1] if hasattr(data, 'iloc') else data[-1]
+                # 获取价格数据
+                if formatted_code not in ticks:
+                    continue
                     
-                    # 提取需要的字段
-                    price = latest_data.get('close', 0) if hasattr(latest_data, 'get') else getattr(latest_data, 'close', 0)
-                    volume = latest_data.get('volume', 0) if hasattr(latest_data, 'get') else getattr(latest_data, 'volume', 0)
+                tick_data = ticks[formatted_code]
+                price = tick_data.get("lastPrice", 0)
+                
+                # 价格过滤
+                if price <= 0 or price > MAX_PRICE:
+                    continue
+                
+                # 获取股票详细信息(总股本)
+                instrument_detail = A.ContextInfo.get_instrument_detail(formatted_code)
+                if not instrument_detail:
+                    continue
                     
-                    if price > 0 and volume > 0:
-                        stock_data.append({
-                            'code': stock_code,
-                            'price': price,
-                            'volume': volume,
-                            'market_cap': price * volume  # 简化的市值计算
-                        })
-                        
+                total_volume = instrument_detail.get('TotalVolumn', 0)
+                if total_volume <= 0:
+                    continue
+                
+                # 计算总市值
+                market_cap = price * total_volume
+                
+                stock_data.append({
+                    'code': original_code,
+                    'formatted_code': formatted_code,
+                    'price': price,
+                    'total_volume': total_volume,
+                    'market_cap': market_cap
+                })
+                
+                processed_count += 1
+                if processed_count % 100 == 0:
+                    log_info("已处理{}只股票".format(processed_count))
+                    
             except Exception as e:
-                log_info("获取股票{}数据失败: {}".format(stock_code, str(e)))
+                log_info("处理股票{}失败: {}".format(original_code, str(e)))
                 continue
                 
-        log_info("成功获取{}只股票数据".format(len(stock_data)))
+        log_info("成功获取{}只股票的完整数据".format(len(stock_data)))
         return stock_data
         
     except Exception as e:
         log_info("批量获取股票数据失败: {}".format(str(e)))
-        # 回退到使用get_market_data的方式
-        return get_stock_data_fallback(stock_list)
-
-def get_stock_data_fallback(stock_list):
-    """回退方案：使用get_market_data逐个获取数据"""
-    try:
-        log_info("使用回退方案获取股票数据...")
-        stock_data = []
-        
-        for stock_code in stock_list:
-            try:
-                # 使用get_market_data获取基础数据
-                data = A.ContextInfo.get_market_data(stock_code)
-                
-                if data and len(data) > 0:
-                    latest = data[-1]
-                    price = latest[2]  # 收盘价
-                    volume = latest[5]  # 成交量
-                    
-                    if price > 0 and price <= MAX_PRICE and volume > 0:
-                        stock_data.append({
-                            'code': stock_code,
-                            'price': price,
-                            'volume': volume,
-                            'market_cap': price * volume  # 简化的市值计算
-                        })
-                        
-            except Exception as e:
-                log_info("获取股票{}数据失败: {}".format(stock_code, str(e)))
-                continue
-                
-        log_info("回退方案成功获取{}只股票数据".format(len(stock_data)))
-        return stock_data
-        
-    except Exception as e:
-        log_info("回退方案也失败: {}".format(str(e)))
         return []
 
 def select_target_stocks():
@@ -167,8 +166,8 @@ def select_target_stocks():
     
     log_info("选出目标股票: {}".format(target_stocks))
     for i, item in enumerate(sorted_stocks[:MAX_POSITIONS]):
-        log_info("第{}名: {} 价格:{:.2f} 市值:{:.0f}".format(
-            i+1, item['code'], item['price'], item['market_cap']))
+        log_info("第{}名: {} 价格:{:.2f} 总股本:{:.0f}万股 市值:{:.2f}万元".format(
+            i+1, item['code'], item['price'], item['total_volume']/10000, item['market_cap']/10000))
     
     return target_stocks
 
@@ -201,34 +200,26 @@ def get_account_total_value():
         log_info("获取账户资产失败: {}".format(str(e)))
         return 0
 
+def get_stock_current_price(stock_code):
+    """获取单只股票当前价格"""
+    try:
+        formatted_code = format_stock_code(stock_code)
+        ticks = A.ContextInfo.get_full_tick([formatted_code])
+        
+        if formatted_code in ticks:
+            return ticks[formatted_code].get("lastPrice", 0)
+        else:
+            log_info("无法获取股票{}的价格".format(stock_code))
+            return 0
+            
+    except Exception as e:
+        log_info("获取股票{}价格失败: {}".format(stock_code, str(e)))
+        return 0
+
 def calculate_buy_volume(stock_code, target_amount):
     """计算买入股数"""
     try:
-        # 使用get_market_data_ex获取最新价格
-        try:
-            data = A.ContextInfo.get_market_data_ex([stock_code], period='1d', count=1, dividend_type='none', fill_data=True)
-            
-            if data is not None and len(data) > 0:
-                latest_data = data.iloc[-1] if hasattr(data, 'iloc') else data[-1]
-                current_price = latest_data.get('close', 0) if hasattr(latest_data, 'get') else getattr(latest_data, 'close', 0)
-            else:
-                # 回退到get_market_data
-                price_data = get_market_data(stock_code)
-                if price_data and len(price_data) > 0:
-                    current_price = price_data[-1][2]  # 收盘价
-                else:
-                    log_info("无法获取股票{}的价格数据".format(stock_code))
-                    return 0
-                    
-        except Exception as e:
-            log_info("获取价格失败，使用回退方案: {}".format(str(e)))
-            # 回退到get_market_data
-            price_data = get_market_data(stock_code)
-            if price_data and len(price_data) > 0:
-                current_price = price_data[-1][2]  # 收盘价
-            else:
-                log_info("无法获取股票{}的价格数据".format(stock_code))
-                return 0
+        current_price = get_stock_current_price(stock_code)
         
         if current_price <= 0:
             log_info("股票{}价格异常: {}".format(stock_code, current_price))

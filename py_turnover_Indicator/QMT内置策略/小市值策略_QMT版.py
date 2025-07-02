@@ -111,7 +111,7 @@ def get_stock_data_batch(stock_list):
                     continue
                 
                 # 获取股票详细信息(总股本)
-                instrument_detail = A.ContextInfo.get_instrument_detail(formatted_code)
+                instrument_detail = A.ContextInfo.get_instrumentdetail(formatted_code)
                 if not instrument_detail:
                     continue
                     
@@ -174,13 +174,16 @@ def select_target_stocks():
 def get_current_positions():
     """获取当前持仓"""
     try:
-        positions = A.ContextInfo.get_stock_positions()
+        positions = get_trade_detail_data('99080945','STOCK','POSITION')
         current_pos = {}
+        #for dt in positions:
+            #print(f'股票代码: {dt.m_strInstrumentID}, 市场类型: {dt.m_strExchangeID}, 证券名称: {dt.m_strInstrumentName}, 持仓量: {dt.m_nVolume}, 可用数量: {dt.m_nCanUseVolume}',
+            #f'成本价: {dt.m_dOpenPrice:.2f}, 市值: {dt.m_dInstrumentValue:.2f}, 持仓成本: {dt.m_dPositionCost:.2f}, 盈亏: {dt.m_dPositionProfit:.2f}')
         
         if positions:
             for pos in positions:
-                if hasattr(pos, 'volume') and pos.volume > 0:
-                    current_pos[pos.stock_code] = pos.volume
+                if hasattr(pos, 'volume') and pos.m_nVolume > 0:
+                    current_pos[pos.stock_code] = pos.m_nVolume
         
         return current_pos
     except Exception as e:
@@ -190,12 +193,11 @@ def get_current_positions():
 def get_account_total_value():
     """获取账户总市值"""
     try:
-        account = A.ContextInfo.get_stock_account()
-        if account and hasattr(account, 'total_asset'):
-            return account.total_asset
-        elif account and hasattr(account, 'asset'):
-            return account.asset
-        return 0
+        accounts = get_trade_detail_data('99080945',"STOCK",'account')
+        for dt in accounts:
+            print(f'总资产: {dt.m_dBalance:.2f}, 净资产: {dt.m_dAssureAsset:.2f}, 总市值: {dt.m_dInstrumentValue:.2f}', 
+            f'总负债: {dt.m_dTotalDebit:.2f}, 可用金额: {dt.m_dAvailable:.2f}, 盈亏: {dt.m_dPositionProfit:.2f}')
+            return dt.m_dBalance
     except Exception as e:
         log_info("获取账户资产失败: {}".format(str(e)))
         return 0
@@ -203,11 +205,10 @@ def get_account_total_value():
 def get_stock_current_price(stock_code):
     """获取单只股票当前价格"""
     try:
-        formatted_code = format_stock_code(stock_code)
-        ticks = A.ContextInfo.get_full_tick([formatted_code])
-        
-        if formatted_code in ticks:
-            return ticks[formatted_code].get("lastPrice", 0)
+        ticks = A.ContextInfo.get_full_tick([stock_code])
+        log_info(ticks)
+        if formatted_code in ticks.values():
+            return formatted_code.get("lastPrice", 0)
         else:
             log_info("无法获取股票{}的价格".format(stock_code))
             return 0

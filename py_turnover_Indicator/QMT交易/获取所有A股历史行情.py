@@ -8,6 +8,8 @@ import os
 import time
 from datetime import datetime, timedelta
 from A股历史行情类 import AStockHistoryData
+from typing import List, Dict, Any
+import pandas as pd
 
 try:
     from xtquant import xtdata
@@ -29,7 +31,8 @@ class AllAStockDataDownloader:
             data_dir: 数据保存目录
         """
         self.data_dir = data_dir
-        self.history_data = AStockHistoryData()
+        self.stock_data = AStockHistoryData()
+        self.logger = self.stock_data.logger  # 使用相同的logger
         self.create_data_directory()
         
     def create_data_directory(self):
@@ -49,11 +52,11 @@ class AllAStockDataDownloader:
         try:
             # 下载财务数据
             print("- 下载财务数据...")
-            self.history_data.download_financial_data()
+            self.stock_data.download_financial_data()
             
             # 下载板块数据  
             print("- 下载板块数据...")
-            self.history_data.download_sector_data()
+            self.stock_data.download_sector_data()
             
             print("基础数据下载完成")
             
@@ -78,11 +81,11 @@ class AllAStockDataDownloader:
             bool: 下载是否成功
         """
         try:
-            formatted_code = self.history_data.format_stock_code(stock_code)
+            formatted_code = self.stock_data.format_stock_code(stock_code)
             
             # 先下载历史数据到本地（根据官方文档要求）
             print(f"  - 下载 {formatted_code} 历史数据到本地...")
-            download_success = self.history_data.download_history_data(formatted_code, period)
+            download_success = self.stock_data.download_history_data(formatted_code, period)
             
             if not download_success:
                 print(f"  ✗ {formatted_code} 历史数据下载失败")
@@ -100,7 +103,7 @@ class AllAStockDataDownloader:
                 start_time = start_date.strftime('%Y%m%d')
                 end_time = end_date.strftime('%Y%m%d')
             
-            df = self.history_data.get_stock_kline_data(
+            df = self.stock_data.get_stock_kline_data(
                 stock_code=formatted_code,
                 period=period,
                 start_time=start_time,
@@ -121,7 +124,7 @@ class AllAStockDataDownloader:
                 filepath = os.path.join(self.data_dir, filename)
                 
                 # 保存为CSV
-                self.history_data.save_to_csv(df, filepath)
+                self.stock_data.save_to_csv(df, filepath)
                 print(f"  ✓ {formatted_code} 数据已保存: {filename} ({len(df)} 条记录)")
                 return True
             else:
@@ -132,94 +135,144 @@ class AllAStockDataDownloader:
             print(f"  ✗ {stock_code} 下载失败: {str(e)}")
             return False
     
-    def download_all_stocks(self,
-                          period: str = '1d',
-                          count: int = -1,
-                          days_back: int = 365,
-                          batch_size: int = 20,
-                          delay: float = 0.5):
+    def download_all_stocks_data(self,
+                                mode: str = 'example',
+                                custom_list: List[str] = None,
+                                period: str = '1d',
+                                start_date: str = '',
+                                end_date: str = '',
+                                specified_stocks: List[str] = None) -> Dict[str, Any]:
         """
-        批量下载所有A股历史数据
+        批量下载A股历史数据
+        根据官方文档修正API调用
         
         Args:
-            period: 数据周期，默认日线
-            count: 获取条数，-1表示根据天数获取
-            days_back: 默认获取天数
-            batch_size: 批次大小（减小以避免过载）
-            delay: 每次请求间隔（秒）
+            mode: 下载模式 'all'全部, 'example'示例, 'custom'自定义, 'specified'指定股票
+            custom_list: 自定义股票列表
+            period: 数据周期
+            start_date: 开始日期
+            end_date: 结束日期  
+            specified_stocks: 指定股票列表
+            
+        Returns:
+            Dict: 下载结果统计
         """
-        print("=== 开始A股历史数据批量下载 ===")
+        start_time = time.time()
         
-        # 先下载基础数据
-        self.download_basic_data()
+        # 初始化结果统计
+        result = {
+            'success_count': 0,
+            'failed_count': 0,
+            'failed_stocks': [],
+            'success_stocks': [],
+            'total_time': 0,
+            'saved_files': []
+        }
         
-        print("\n正在获取所有A股列表...")
-        stock_list = self.history_data.get_all_a_stock_list()
-        
-        if not stock_list:
-            print("未获取到股票列表，程序退出")
-            return
-        
-        print(f"\n开始下载 {len(stock_list)} 只A股历史数据...")
-        print(f"数据周期: {period}")
-        print(f"获取条数: {count if count != -1 else f'最近{days_back}天'}")
-        print(f"保存目录: {self.data_dir}")
-        print(f"批次大小: {batch_size}")
-        print(f"请求间隔: {delay}秒")
-        
-        success_count = 0
-        fail_count = 0
-        start_time = datetime.now()
-        
-        # 分批下载
-        for i in range(0, len(stock_list), batch_size):
-            batch = stock_list[i:i + batch_size]
-            batch_num = i // batch_size + 1
-            total_batches = (len(stock_list) + batch_size - 1) // batch_size
+        try:
+            # 根据官方文档，先下载板块数据
+            self.logger.info("开始下载任务，首先下载板块数据...")
+            try:
+                self.stock_data.download_sector_data()
+                self.logger.info("板块数据下载完成")
+            except Exception as e:
+                self.logger.warning(f"下载板块数据失败: {str(e)}")
             
-            print(f"\n=== 第 {batch_num}/{total_batches} 批次 ({len(batch)} 只股票) ===")
-            batch_start_time = datetime.now()
+            # 获取股票列表
+            if mode == 'all':
+                stock_list = self.stock_data.get_all_a_stock_list()
+                self.logger.info(f"全量模式：获取到 {len(stock_list)} 只A股")
+            elif mode == 'example':
+                # 示例模式：获取前50只股票作为示例
+                all_stocks = self.stock_data.get_all_a_stock_list()
+                stock_list = all_stocks[:50] if all_stocks else []
+                self.logger.info(f"示例模式：选择前 {len(stock_list)} 只股票进行测试")
+            elif mode == 'custom' and custom_list:
+                stock_list = custom_list
+                self.logger.info(f"自定义模式：共 {len(stock_list)} 只股票")
+            elif mode == 'specified' and specified_stocks:
+                stock_list = specified_stocks
+                self.logger.info(f"指定股票模式：共 {len(stock_list)} 只股票")
+            else:
+                self.logger.error("无效的下载模式或缺少股票列表")
+                return result
             
-            for j, stock_code in enumerate(batch):
-                print(f"[{i+j+1}/{len(stock_list)}] 正在处理 {stock_code}...")
-                
-                success = self.download_stock_data(
-                    stock_code=stock_code,
-                    period=period,
-                    count=count,
-                    days_back=days_back
-                )
-                
-                if success:
-                    success_count += 1
-                else:
-                    fail_count += 1
-                
-                # 请求间隔，避免频率过高
-                if delay > 0:
-                    time.sleep(delay)
+            if not stock_list:
+                self.logger.error("未获取到股票列表")
+                return result
             
-            batch_end_time = datetime.now()
-            batch_duration = (batch_end_time - batch_start_time).total_seconds()
+            self.logger.info(f"开始批量下载 {len(stock_list)} 只股票的历史数据...")
             
-            print(f"第 {batch_num} 批次完成，用时: {batch_duration:.1f}秒")
-            print(f"当前统计 - 成功: {success_count}, 失败: {fail_count}")
+            # 批量下载
+            for i, stock_code in enumerate(stock_list, 1):
+                try:
+                    self.logger.info(f"进度 [{i}/{len(stock_list)}] 正在处理: {stock_code}")
+                    
+                    # 获取K线数据 - 使用修正后的API
+                    df = self.stock_data.get_stock_kline_data(
+                        stock_code=stock_code,
+                        period=period,
+                        start_time=start_date,
+                        end_time=end_date,
+                        count=-1,
+                        dividend_type='front'
+                    )
+                    
+                    if df is not None and not df.empty:
+                        # 保存到CSV文件
+                        try:
+                            # 创建文件名
+                            formatted_code = stock_code.replace('.', '_')
+                            current_date = datetime.now().strftime('%Y%m%d')
+                            filename = f"{formatted_code}_{period}_{current_date}.csv"
+                            file_path = os.path.join(self.data_dir, filename)
+                            
+                            # 保存到CSV
+                            df.to_csv(file_path, index=False, encoding='utf-8-sig')
+                            
+                            result['success_count'] += 1
+                            result['success_stocks'].append(stock_code)
+                            result['saved_files'].append(filename)
+                            self.logger.info(f"✓ {stock_code} 数据保存成功: {filename}")
+                        except Exception as save_error:
+                            result['failed_count'] += 1
+                            result['failed_stocks'].append(stock_code)
+                            self.logger.error(f"✗ {stock_code} 数据保存失败: {str(save_error)}")
+                    else:
+                        result['failed_count'] += 1
+                        result['failed_stocks'].append(stock_code)
+                        self.logger.warning(f"✗ {stock_code} 未获取到有效数据")
+                    
+                    # 添加延时避免请求过于频繁
+                    if i % 10 == 0:
+                        self.logger.info(f"已处理 {i} 只股票，暂停 1 秒...")
+                        time.sleep(1)
+                        
+                except Exception as e:
+                    result['failed_count'] += 1
+                    result['failed_stocks'].append(stock_code)
+                    self.logger.error(f"✗ {stock_code} 处理失败: {str(e)}")
+                    continue
             
-            # 批次间稍长间隔
-            if batch_num < total_batches:
-                print(f"批次间暂停 {delay*2:.1f}秒...")
-                time.sleep(delay * 2)
-        
-        end_time = datetime.now()
-        total_duration = (end_time - start_time).total_seconds()
-        
-        print(f"\n=== 下载完成 ===")
-        print(f"总用时: {total_duration/60:.1f}分钟")
-        print(f"总股票数: {len(stock_list)}")
-        print(f"成功下载: {success_count}")
-        print(f"下载失败: {fail_count}")
-        print(f"成功率: {success_count/len(stock_list)*100:.1f}%")
-        print(f"数据保存在: {os.path.abspath(self.data_dir)}")
+            # 统计结果
+            result['total_time'] = time.time() - start_time
+            
+            self.logger.info("=" * 60)
+            self.logger.info("批量下载完成!")
+            self.logger.info(f"总耗时: {result['total_time']:.2f} 秒")
+            self.logger.info(f"成功: {result['success_count']} 只")
+            self.logger.info(f"失败: {result['failed_count']} 只")
+            self.logger.info(f"成功率: {result['success_count']/(result['success_count']+result['failed_count'])*100:.1f}%")
+            
+            if result['failed_stocks']:
+                self.logger.warning(f"失败股票: {result['failed_stocks'][:10]}{'...' if len(result['failed_stocks']) > 10 else ''}")
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"批量下载过程中发生错误: {str(e)}")
+            result['total_time'] = time.time() - start_time
+            return result
     
     def download_sample_stocks(self, sample_size: int = 10):
         """
@@ -234,7 +287,7 @@ class AllAStockDataDownloader:
         self.download_basic_data()
         
         print("\n获取股票列表...")
-        stock_list = self.history_data.get_all_a_stock_list()
+        stock_list = self.stock_data.get_all_a_stock_list()
         if stock_list:
             # 取前面一部分股票作为示例
             sample_stocks = stock_list[:sample_size]
@@ -297,6 +350,34 @@ class AllAStockDataDownloader:
         print(f"\n=== 指定股票下载完成 ===")
         print(f"成功下载: {success_count}/{len(stock_codes)} 只股票")
 
+    def save_to_csv(self, df: pd.DataFrame, stock_code: str, period: str) -> str:
+        """
+        保存DataFrame到CSV文件
+        
+        Args:
+            df: 股票数据DataFrame
+            stock_code: 股票代码
+            period: 数据周期
+            
+        Returns:
+            str: 保存的文件路径，失败返回None
+        """
+        try:
+            # 创建文件名
+            formatted_code = stock_code.replace('.', '_')
+            current_date = datetime.now().strftime('%Y%m%d')
+            filename = f"{formatted_code}_{period}_{current_date}.csv"
+            file_path = os.path.join(self.data_dir, filename)
+            
+            # 保存到CSV
+            df.to_csv(file_path, index=False, encoding='utf-8-sig')
+            self.logger.debug(f"数据已保存到: {file_path}")
+            return filename
+            
+        except Exception as e:
+            self.logger.error(f"保存CSV文件失败: {str(e)}")
+            return None
+
 
 def main():
     """主函数"""
@@ -330,11 +411,17 @@ def main():
                 days_str = input("获取天数 (默认365): ").strip() or '365'
                 days_back = int(days_str)
                 
-                downloader.download_all_stocks(
+                # 计算时间范围
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=days_back)
+                start_time_str = start_date.strftime('%Y%m%d')
+                end_time_str = end_date.strftime('%Y%m%d')
+                
+                downloader.download_all_stocks_data(
+                    mode='all',
                     period=period,
-                    days_back=days_back,
-                    batch_size=15,  # 减小批次避免过载
-                    delay=0.5  # 增加间隔
+                    start_date=start_time_str,
+                    end_date=end_time_str
                 )
             else:
                 print("已取消下载")
@@ -353,11 +440,13 @@ def main():
             batch_size = int(input("批次大小 (默认15): ").strip() or '15')
             delay = float(input("请求间隔秒数 (默认0.5): ").strip() or '0.5')
             
-            downloader.download_all_stocks(
+            downloader.download_all_stocks_data(
+                mode='custom',
+                custom_list=None,
                 period=period,
-                days_back=days_back,
-                batch_size=batch_size,
-                delay=delay
+                start_date='',
+                end_date='',
+                specified_stocks=None
             )
             
         elif choice == '4':
@@ -371,10 +460,19 @@ def main():
                 period = input("数据周期 (1d/1h/1w/1M，默认1d): ").strip() or '1d'
                 days_back = int(input("获取天数 (默认365): ").strip() or '365')
                 
-                downloader.download_custom_stocks(
-                    stock_codes=stock_codes,
+                # 计算时间范围
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=days_back)
+                start_time_str = start_date.strftime('%Y%m%d')
+                end_time_str = end_date.strftime('%Y%m%d')
+                
+                downloader.download_all_stocks_data(
+                    mode='specified',
+                    custom_list=None,
                     period=period,
-                    days_back=days_back
+                    start_date=start_time_str,
+                    end_date=end_time_str,
+                    specified_stocks=stock_codes
                 )
             else:
                 print("未输入股票代码")

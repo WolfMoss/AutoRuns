@@ -13,11 +13,11 @@ miniqmt轻松入门：
 # 官方文档 http://docs.thinktrader.net/vip/pages/198696/#xtquant数据字典
 
 # 指定价买入下单，接口返回订单编号，后续可以用于撤单操作以及查询委托状态
-fix_result_order_id = xt_trader.order_stock(account_putong, '159607.SZ', xtconstant.STOCK_BUY, 100, xtconstant.FIX_PRICE, 0.7, 'strategy1', '买入中概互联网ETF')
+fix_result_order_id = xt_trader.order_stock(account_putong, '300433.SZ', xtconstant.STOCK_BUY, 100, xtconstant.FIX_PRICE, 0.7)
 print(fix_result_order_id)
 
 # 按最新价买入下单，接口返回订单编号，后续可以用于撤单操作以及查询委托状态
-fix_result_order_id = xt_trader.order_stock(account_putong, '159607.SZ', xtconstant.STOCK_BUY, 100, xtconstant.LATEST_PRICE, -1, 'strategy1', '买入中概互联网ETF')
+fix_result_order_id = xt_trader.order_stock(account_putong, '300433.SZ', xtconstant.STOCK_BUY, 100, xtconstant.MARKET_SZ_FULL_OR_CANCEL, 0)
 print(fix_result_order_id)
 
 

@@ -393,7 +393,7 @@ def send_order(exec_time):
 
 # 设置每天早上运行 my_daily_task
 #schedule.every().day.at("09:16").do(send_order,exec_time='morning')
-schedule.every().day.at("14:30").do(send_order,exec_time='afternoon')
+schedule.every().day.at("16:41").do(send_order,exec_time='afternoon')
 
 print("定时任务已启动，等待每天执行...")
 

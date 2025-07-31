@@ -45,15 +45,24 @@ def process_file(input_file):
     print(f"{input_file} 的因子计算完成，结果已保存。")
 
 def main():
-    import pandas as pd
-    # 直接配置需要处理的多个标的CSV文件路径
-    file_list = [
-        "datas/BTC_USDT_1h.csv",
-        "datas/ETH_USDT_1h.csv",
-        "datas/BNB_USDT_1h.csv",
-        "datas/DOGE_USDT_1h.csv",
-        "datas/SWARMS_USDT_1h.csv"
-    ]
+    import glob
+    
+    # 自动获取datas目录下所有CSV文件
+    datas_dir = "datas"
+    if not os.path.exists(datas_dir):
+        print(f"目录 {datas_dir} 不存在")
+        return
+    
+    file_list = glob.glob(os.path.join(datas_dir, "*.csv"))
+    
+    if not file_list:
+        print(f"在 {datas_dir} 目录下没有找到CSV文件")
+        return
+    
+    print(f"找到 {len(file_list)} 个CSV文件:")
+    for file_path in file_list:
+        print(f"  - {file_path}")
+    
     for file_path in file_list:
         process_file(file_path)
 

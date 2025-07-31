@@ -14,10 +14,10 @@ def fetch_symbol(symbol, timeframe, since, limit, proxy, cache_dir):
 
 def main():
     # 设置多个品种，例如 BTC/USDT、ETH/USDT、BNB/USDT
-    symbols = ['DOGE/USDT',]
-    timeframe = '1h'
+    symbols = ['TRUMP/USDT',]
+    timeframe = '30m'
     # 注意：时间戳单位为毫秒
-    since = int(datetime.datetime(2023, 1, 1).timestamp() * 1000)
+    since = int(datetime.datetime(2025, 1, 19).timestamp() * 1000)
     limit = 1000  # 每次获取的数据量
     # 指定缓存目录，如果传入的是目录，则会在目录下生成按照品种和时间周期命名的 csv 文件
     cache_dir = "datas"

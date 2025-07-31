@@ -70,7 +70,7 @@ selected_row = stock_zh_index_spot_em_df[stock_zh_index_spot_em_df['代码'] == 
 # 获取该行的"最新价"字段值
 latest_price = selected_row['最新价'].values[0]
 
-db = pymysql.connect(host='axiba.idnmd.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
+db = pymysql.connect(host='wolfmoss.top', user='root', passwd='ilikecs123!', port=8306, db='quant')
 cursor = db.cursor()
 sql = f"INSERT INTO `quant`.`a_cj`(`cj_date`, `cj_turnover`,`cj_top5`,`cj_top5_proportion`,`cj_szzs`) VALUES ('{cj_date}', '{cj_turnover}', '{amount_sum}', '{new_cj_top5_proportion}','{latest_price}')"
 # 执行 SQL 语句

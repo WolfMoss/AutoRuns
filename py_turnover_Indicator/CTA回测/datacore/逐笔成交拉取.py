@@ -29,8 +29,8 @@ def main():
     try:
         string_data = fetcher.get_agg_trades(
             symbol=symbol,
-            start_time="2025-07-30 03:00:00",  # 字符串格式
-            end_time="2025-07-30 06:00:00",    # 字符串格式
+            start_time="2025-02-01 00:00:00",  # 字符串格式
+            end_time="2025-08-14 06:49:00",    # 字符串格式
             cache_file=cache_dir
         )
         

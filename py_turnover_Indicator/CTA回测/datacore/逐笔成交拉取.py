@@ -81,8 +81,8 @@ async def main():
         tasks = [
             async_fetcher.get_agg_trades_async(
                 symbol=sym,
-                start_time="2025-02-01 00:00:00",
-                end_time="2025-02-05 06:00:00",  # 6小时数据
+                start_time="2025-08-18 00:00:00",
+                end_time="2025-08-18 00:30:00",  # 6小时数据
                 cache_file=cache_dir
             )
             for sym in symbols
@@ -158,7 +158,7 @@ if __name__ == '__main__':
             data = fetcher.get_agg_trades(
                 symbol='TRUMP/USDT',
                 start_time="2025-02-01 00:00:00",
-                end_time="2025-02-01 06:00:00",  # 较短时间范围
+                end_time="2025-02-01 00:30:00",  # 较短时间范围
                 cache_file="tick_datas"
             )
             print(f"✅ 同步版本成功获取: {len(data)} 条记录")

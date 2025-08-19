@@ -9,6 +9,7 @@
 - 智能缓存管理
 - 数据去重和质量检查
 - 保证数据完整性的同时显著提升效率
+- 高精度价格数据处理
 """
 
 import asyncio
@@ -21,6 +22,10 @@ from typing import Optional, List, Dict, Any, Union
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import json
+from decimal import Decimal, getcontext
+
+# 设置Decimal精度
+getcontext().prec = 50
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -50,6 +55,10 @@ class AsyncAggTradesDataFetcher:
         self.batch_size = 1000  # 每次获取的记录数（API最大限制）
         self.rate_limit_delay = 0.1  # 异步环境下可以更短的间隔
         self.max_concurrent_requests = 5  # 最大并发请求数
+        
+        # 精度配置
+        self.preserve_precision = config.get('preserve_precision', True) if config else True
+        self.decimal_places = config.get('decimal_places', 8) if config else 8
         
         # Windows兼容性：延迟创建信号量到异步上下文中
         self._semaphore = None
@@ -283,7 +292,7 @@ class AsyncAggTradesDataFetcher:
     
     def _convert_to_dataframe(self, trades: List[Dict]) -> pd.DataFrame:
         """
-        将聚合交易数据转换为DataFrame
+        将聚合交易数据转换为DataFrame，完全保持价格精度
         """
         if not trades:
             return pd.DataFrame()
@@ -304,16 +313,76 @@ class AsyncAggTradesDataFetcher:
         
         df = df.rename(columns=column_mapping)
         
-        # 转换数据类型
-        df['price'] = pd.to_numeric(df['price'], errors='coerce')
-        df['quantity'] = pd.to_numeric(df['quantity'], errors='coerce')
+        # 完全保持精度的数据处理
+        if self.preserve_precision:
+            # 关键：完全保留原始字符串，不进行任何float转换
+            df['price_original'] = df['price'].astype(str)  # 确保是字符串
+            df['quantity_original'] = df['quantity'].astype(str)  # 数量也保留原始
+            
+            try:
+                # 检测实际精度
+                max_decimal_places = 0
+                for price_str in df['price_original'].dropna():
+                    if '.' in str(price_str):
+                        decimal_places = len(str(price_str).split('.')[-1])
+                        max_decimal_places = max(max_decimal_places, decimal_places)
+                
+                self.detected_precision = max_decimal_places
+                logger.info(f"检测到价格精度: {max_decimal_places} 位小数")
+                
+                # 使用Decimal进行所有数值计算，完全避免float
+                df['price_decimal'] = df['price_original'].apply(
+                    lambda x: Decimal(str(x)) if pd.notna(x) and str(x).strip() != '' else None
+                )
+                df['quantity_decimal'] = df['quantity_original'].apply(
+                    lambda x: Decimal(str(x)) if pd.notna(x) and str(x).strip() != '' else None
+                )
+                
+                # 为了兼容现有代码，提供float版本，但使用更高精度
+                # 注意：这里仍然可能有微小的精度损失，真正需要精度时应使用decimal列
+                df['price'] = df['price_decimal'].apply(
+                    lambda x: float(x) if x is not None else None
+                )
+                df['quantity'] = df['quantity_decimal'].apply(
+                    lambda x: float(x) if x is not None else None
+                )
+                
+                # 标记使用了高精度处理
+                df['precision_preserved'] = True
+                
+            except Exception as e:
+                logger.warning(f"高精度处理失败，回退到标准处理: {e}")
+                df['price'] = pd.to_numeric(df['price'], errors='coerce')
+                df['quantity'] = pd.to_numeric(df['quantity'], errors='coerce')
+                df['precision_preserved'] = False
+                
+        else:
+            # 标准处理：直接转换为float
+            df['price'] = pd.to_numeric(df['price'], errors='coerce')
+            df['quantity'] = pd.to_numeric(df['quantity'], errors='coerce')
+            df['precision_preserved'] = False
+        
+        # 时间戳转换
         df['timestamp'] = pd.to_numeric(df['timestamp'], errors='coerce')
         
         # 添加datetime列
         df['datetime'] = pd.to_datetime(df['timestamp'], unit='ms').dt.strftime('%Y-%m-%d %H:%M:%S.%f')
         
-        # 添加成交额列
-        df['amount_quote'] = df['price'] * df['quantity']
+        # 成交额计算 - 根据是否保持精度选择不同方法
+        if self.preserve_precision and 'price_decimal' in df.columns and 'quantity_decimal' in df.columns:
+            # 使用Decimal进行精确计算
+            df['amount_quote_decimal'] = df.apply(
+                lambda row: row['price_decimal'] * row['quantity_decimal'] 
+                if row['price_decimal'] is not None and row['quantity_decimal'] is not None 
+                else None, axis=1
+            )
+            # 提供float版本供兼容性使用
+            df['amount_quote'] = df['amount_quote_decimal'].apply(
+                lambda x: float(x) if x is not None else None
+            )
+        else:
+            # 标准计算
+            df['amount_quote'] = df['price'] * df['quantity']
         
         # 添加买卖方向列（基于is_buyer_maker）
         df['side'] = df['is_buyer_maker'].apply(lambda x: 'sell' if x else 'buy')
@@ -324,30 +393,84 @@ class AsyncAggTradesDataFetcher:
         return df
     
     def _save_to_cache(self, df: pd.DataFrame, file_path: str, symbol: str):
-        """保存数据到缓存文件"""
+        """保存数据到缓存文件，完全保持精度"""
         try:
             if df.empty:
                 logger.warning("数据为空，跳过保存")
                 return
                 
             # 选择要保存的列
-            output_columns = ['agg_trade_id', 'timestamp', 'datetime', 'price', 'quantity', 
-                            'amount_quote', 'side', 'is_buyer_maker', 'first_trade_id', 'last_trade_id']
+            base_columns = ['agg_trade_id', 'timestamp', 'datetime', 'price', 'quantity', 
+                           'amount_quote', 'side', 'is_buyer_maker', 'first_trade_id', 'last_trade_id']
+            
+            # 如果有高精度列，优先保存高精度版本
+            if self.preserve_precision and 'price_original' in df.columns:
+                # 高精度保存：优先使用原始字符串和Decimal计算结果
+                save_columns = ['agg_trade_id', 'timestamp', 'datetime', 
+                               'price_original', 'quantity_original',  # 使用原始字符串
+                               'price', 'quantity',  # 保留float版本用于兼容
+                               'amount_quote', 'side', 'is_buyer_maker', 
+                               'first_trade_id', 'last_trade_id']
+                
+                # 添加高精度标记列
+                if 'precision_preserved' in df.columns:
+                    save_columns.append('precision_preserved')
+            else:
+                save_columns = base_columns
             
             # 确保所有列都存在
-            for col in output_columns:
-                if col not in df.columns:
+            output_columns = []
+            for col in save_columns:
+                if col in df.columns:
+                    output_columns.append(col)
+                else:
                     df[col] = None
+                    output_columns.append(col)
                     
             # 添加symbol列
             df['symbol'] = symbol
             
-            df[['symbol'] + output_columns].to_csv(file_path, index=False, encoding="utf-8")
+            # 准备保存的数据
+            save_df = df[['symbol'] + output_columns].copy()
+            
+            # 如果使用高精度，重命名列以突出显示精度保持
+            if self.preserve_precision and 'price_original' in save_df.columns:
+                # 重新排列列顺序，突出高精度列
+                column_order = ['symbol', 'agg_trade_id', 'timestamp', 'datetime']
+                
+                # 价格相关列
+                if 'price_original' in save_df.columns:
+                    column_order.append('price_original')  # 原始字符串价格
+                column_order.append('price')  # float价格
+                
+                # 数量相关列
+                if 'quantity_original' in save_df.columns:
+                    column_order.append('quantity_original')  # 原始字符串数量
+                column_order.append('quantity')  # float数量
+                
+                # 其他列
+                remaining_cols = [col for col in save_df.columns if col not in column_order]
+                column_order.extend(remaining_cols)
+                
+                # 重新排序
+                save_df = save_df[column_order]
+            
+            # 保存到CSV，确保精度不丢失
+            save_df.to_csv(file_path, index=False, encoding="utf-8", 
+                          float_format='%.10f')  # 为float列设置高精度格式
             
             logger.info(f"异步聚合交易数据已保存到: {file_path} ({len(df)} 条记录)")
+            if hasattr(self, 'detected_precision'):
+                logger.info(f"数据精度: {self.detected_precision} 位小数")
+            
+            # 验证保存的精度
+            if self.preserve_precision and 'price_original' in df.columns:
+                logger.info("✅ 已保存原始价格字符串，精度完全保持")
             
         except Exception as e:
             logger.error(f"保存缓存失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
     
     def _load_cached_data(self, file_path: str) -> Optional[pd.DataFrame]:
         """加载缓存数据"""

@@ -4,13 +4,12 @@
 并发聚合交易数据获取示例程序
 演示如何使用异步并发版本的 /api/v3/aggTrades 接口获取历史数据
 """
-
+import traceback
 import asyncio
 import time
 import platform
 from datetime import datetime, timedelta
 from async_agg_trades_data import AsyncAggTradesDataFetcher
-from agg_trades_data import AggTradesDataFetcher  # 保留同步版本用于对比
 
 def setup_windows_compatibility():
     """设置Windows兼容性"""
@@ -29,7 +28,10 @@ async def main():
     # 配置参数
     symbol = 'TRUMP/USDT'
     cache_dir = "tick_datas"
-    proxy = 'http://wolfmoss.top:8016'  # 如果不需要代理，设为 None
+    # 代理配置 - 包含用户名和密码
+    proxy = 'http://axiba:ilikecs123!@wolfmoss.top:8017'  # 格式: http://用户名:密码@主机:端口
+    # 如果不需要代理，设为 None
+    # 如果代理不需要身份验证，使用: 'http://wolfmoss.top:8016'
     
     print("=== 并发聚合交易数据获取示例 ===")
     print("使用币安 /api/v3/aggTrades 接口 + 异步并发优化")
@@ -148,26 +150,9 @@ if __name__ == '__main__':
         asyncio.run(main())
     except Exception as e:
         print(f"❌ 程序执行出错: {e}")
-        import traceback
+
         print(f"详细错误信息:\n{traceback.format_exc()}")
         
-        # 如果异步版本失败，尝试同步版本作为备选
-        print("\n🔄 尝试使用同步版本作为备选...")
-        try:
-            fetcher = AggTradesDataFetcher(proxy='http://wolfmoss.top:8016')
-            data = fetcher.get_agg_trades(
-                symbol='TRUMP/USDT',
-                start_time="2025-02-01 00:00:00",
-                end_time="2025-02-01 00:30:00",  # 较短时间范围
-                cache_file="tick_datas"
-            )
-            print(f"✅ 同步版本成功获取: {len(data)} 条记录")
-        except Exception as sync_e:
-            print(f"❌ 同步版本也失败: {sync_e}")
-    
-    # 可选：运行同步版本对比
-    print("\n" + "="*60)
-
     
     print(f"\n🎉 所有示例程序执行完成！")
     print("💡 建议：日常使用异步版本以获得更好的性能体验") 

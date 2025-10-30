@@ -3,6 +3,10 @@
 
 """
 Binance U本位合约 WebSocket 客户端使用示例
+
+支持代理服务器配置，包括用户名和密码身份验证：
+- 如果代理服务器需要用户名和密码，请设置 proxy_username 和 proxy_password
+- 如果不需要身份验证，保持 proxy_username 和 proxy_password 为 None
 """
 
 import time
@@ -47,8 +51,10 @@ def example_3_with_custom_callbacks():
     client = BinanceFuturesWebSocketClient(
         symbols=['TRUMPUSDT'],
         proxy_host="wolfmoss.top",  # 如果不需要代理，设置为None
-        proxy_port=8016,
-        proxy_type="http"
+        proxy_port=8017,
+        proxy_type="http",
+        proxy_username="axiba",  # 代理用户名（如果代理需要身份验证）
+        proxy_password="ilikecs123!"   # 代理密码（如果代理需要身份验证）
     )
     
     # 设置回调函数

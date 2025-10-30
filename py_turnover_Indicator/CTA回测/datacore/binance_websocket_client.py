@@ -31,7 +31,9 @@ class BinanceFuturesWebSocketClient:
                  symbols: list = None,
                  proxy_host: str = None,
                  proxy_port: int = None,
-                 proxy_type: str = "http"):
+                 proxy_type: str = "http",
+                 proxy_username: str = None,
+                 proxy_password: str = None):
         """
         初始化WebSocket客户端
         
@@ -40,11 +42,15 @@ class BinanceFuturesWebSocketClient:
             proxy_host: 代理服务器地址
             proxy_port: 代理服务器端口
             proxy_type: 代理类型，支持'http'、'socks4'或'socks5'
+            proxy_username: 代理服务器用户名（如果需要身份验证）
+            proxy_password: 代理服务器密码（如果需要身份验证）
         """
         self.symbols = symbols or ['BTCUSDT']
         self.proxy_host = proxy_host
         self.proxy_port = proxy_port
         self.proxy_type = proxy_type
+        self.proxy_username = proxy_username
+        self.proxy_password = proxy_password
         
         # WebSocket相关 - 使用U本位合约端点
         self.ws = None
@@ -65,12 +71,20 @@ class BinanceFuturesWebSocketClient:
         
         self.logger = logging.getLogger(__name__)
         
-    def set_proxy(self, proxy_host: str, proxy_port: int, proxy_type: str = "http"):
+    def set_proxy(self, proxy_host: str, proxy_port: int, proxy_type: str = "http", 
+                  proxy_username: str = None, proxy_password: str = None):
         """设置代理配置"""
         self.proxy_host = proxy_host
         self.proxy_port = proxy_port
         self.proxy_type = proxy_type
-        self.logger.info(f"设置代理: {proxy_type}://{proxy_host}:{proxy_port}")
+        self.proxy_username = proxy_username
+        self.proxy_password = proxy_password
+        
+        # 构建日志信息（不显示密码）
+        auth_info = ""
+        if proxy_username:
+            auth_info = f" (用户名: {proxy_username})"
+        self.logger.info(f"设置代理: {proxy_type}://{proxy_host}:{proxy_port}{auth_info}")
     
     def set_message_callback(self, callback: Callable[[Dict[str, Any]], None]):
         """设置消息回调函数"""
@@ -224,32 +238,32 @@ class BinanceFuturesWebSocketClient:
             # 设置代理
             proxy_config = {}
             if self.proxy_host and self.proxy_port:
+                base_config = {
+                    "http_proxy_host": self.proxy_host,
+                    "http_proxy_port": self.proxy_port
+                }
+                
+                # 如果提供了用户名和密码，添加身份验证
+                if self.proxy_username and self.proxy_password:
+                    base_config.update({
+                        "http_proxy_auth": (self.proxy_username, self.proxy_password)
+                    })
+                
                 if self.proxy_type.lower() == "http":
-                    proxy_config = {
-                        "http_proxy_host": self.proxy_host,
-                        "http_proxy_port": self.proxy_port,
-                        "proxy_type": "http"
-                    }
+                    proxy_config = {**base_config, "proxy_type": "http"}
                 elif self.proxy_type.lower() == "socks5":
-                    proxy_config = {
-                        "http_proxy_host": self.proxy_host,
-                        "http_proxy_port": self.proxy_port,
-                        "proxy_type": "socks5"
-                    }
+                    proxy_config = {**base_config, "proxy_type": "socks5"}
                 elif self.proxy_type.lower() == "socks4":
-                    proxy_config = {
-                        "http_proxy_host": self.proxy_host,
-                        "http_proxy_port": self.proxy_port,
-                        "proxy_type": "socks4"
-                    }
+                    proxy_config = {**base_config, "proxy_type": "socks4"}
                 else:
                     self.logger.warning(f"不支持的代理类型: {self.proxy_type}，将尝试HTTP代理")
-                    proxy_config = {
-                        "http_proxy_host": self.proxy_host,
-                        "http_proxy_port": self.proxy_port,
-                        "proxy_type": "http"
-                    }
-                self.logger.info(f"使用代理: {self.proxy_type}://{self.proxy_host}:{self.proxy_port}")
+                    proxy_config = {**base_config, "proxy_type": "http"}
+                
+                # 构建日志信息（不显示密码）
+                auth_info = ""
+                if self.proxy_username:
+                    auth_info = f" (用户名: {self.proxy_username})"
+                self.logger.info(f"使用代理: {self.proxy_type}://{self.proxy_host}:{self.proxy_port}{auth_info}")
             
             # 创建WebSocket连接
             self.ws = websocket.WebSocketApp(
@@ -315,7 +329,9 @@ def main():
         symbols=['BTCUSDT', 'ETHUSDT', 'BNBUSDT'],  # 订阅的交易对
         proxy_host="127.0.0.1",  # 代理服务器地址
         proxy_port=7890,         # 代理服务器端口
-        proxy_type="http"        # 代理类型
+        proxy_type="http",       # 代理类型
+        proxy_username="your_username",  # 代理用户名（可选）
+        proxy_password="your_password"   # 代理密码（可选）
     )
     
     # 可选：设置自定义回调函数

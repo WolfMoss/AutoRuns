@@ -5,3 +5,7 @@ schedule
 python-dotenv
 requests
 urllib3
+MetaTrader5
+akshare
+numpy
+pytz

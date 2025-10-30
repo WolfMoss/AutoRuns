@@ -1,11 +1,8 @@
 import os
 import time
-import schedule
 from openai import OpenAI
-import akshare as ak
 import pandas as pd
 import MetaTrader5 as mt5
-import re
 from dotenv import load_dotenv
 import json
 from datetime import datetime, timedelta
@@ -197,7 +194,7 @@ def get_gold_futures_data():
         return None
 
 def calculate_technical_indicators(df):
-    """计算技术指标"""
+    """计算技术指标（仅保留移动平均线）"""
     try:
         # 移动平均线
         df['sma_5'] = df['close'].rolling(window=5, min_periods=1).mean()
@@ -206,27 +203,6 @@ def calculate_technical_indicators(df):
         df['sma_60'] = df['close'].rolling(window=60, min_periods=1).mean()
         df['sma_120'] = df['close'].rolling(window=120, min_periods=1).mean()
         df['sma_240'] = df['close'].rolling(window=240, min_periods=1).mean()
-
-        # 指数移动平均线
-        df['ema_12'] = df['close'].ewm(span=12).mean()
-        df['ema_26'] = df['close'].ewm(span=26).mean()
-        df['macd'] = df['ema_12'] - df['ema_26']
-        df['macd_signal'] = df['macd'].ewm(span=9).mean()
-        df['macd_histogram'] = df['macd'] - df['macd_signal']
-
-        # 相对强弱指数 (RSI)
-        delta = df['close'].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(14).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-        rs = gain / loss
-        df['rsi'] = 100 - (100 / (1 + rs))
-
-        # 布林带
-        df['bb_middle'] = df['close'].rolling(20).mean()
-        bb_std = df['close'].rolling(20).std()
-        df['bb_upper'] = df['bb_middle'] + (bb_std * 2)
-        df['bb_lower'] = df['bb_middle'] - (bb_std * 2)
-        df['bb_position'] = (df['close'] - df['bb_lower']) / (df['bb_upper'] - df['bb_lower'])
 
         # 填充NaN值
         df = df.bfill().ffill()
@@ -237,14 +213,14 @@ def calculate_technical_indicators(df):
         return df
 
 def get_market_trend(df):
-    """准备技术指标数据文本，不调用AI"""
+    """准备移动平均线数据文本，不调用AI"""
     try:
         current_price = df['close'].iloc[-1]
         current_data = df.iloc[-1]
         
-        # 准备技术指标数据文本
+        # 准备移动平均线数据文本
         indicators_text = f"""
-【技术指标详细数据】
+【移动平均线数据】
 当前价格: {current_price:.2f}
 
 📊 移动平均线系统:
@@ -255,18 +231,7 @@ def get_market_trend(df):
 - SMA_120: {current_data.get('sma_120', 0):.2f} (偏离: {((current_price - current_data.get('sma_120', current_price)) / current_price * 100):+.2f}%)
 - SMA_240: {current_data.get('sma_240', 0):.2f} (偏离: {((current_price - current_data.get('sma_240', current_price)) / current_price * 100):+.2f}%)
 
-📈 动量指标:
-- RSI: {current_data.get('rsi', 50):.2f} ({'超买区' if current_data.get('rsi', 50) > 70 else '超卖区' if current_data.get('rsi', 50) < 30 else '中性区'})
-- MACD: {current_data.get('macd', 0):.4f}
-- MACD信号线: {current_data.get('macd_signal', 0):.4f}
-- MACD柱状图: {current_data.get('macd_histogram', 0):.4f}
-
-🎚️ 布林带:
-- 上轨: {current_data.get('bb_upper', 0):.2f}
-- 中轨: {current_data.get('bb_middle', 0):.2f}
-- 下轨: {current_data.get('bb_lower', 0):.2f}
-- 布林带位置: {current_data.get('bb_position', 0.5):.2%} ({'上部区域' if current_data.get('bb_position', 0.5) > 0.7 else '下部区域' if current_data.get('bb_position', 0.5) < 0.3 else '中部区域'})
-
+说明：均线用于辅助判断趋势方向，结合K线形态和成交量进行分析。
 """
         
         return {
@@ -274,10 +239,10 @@ def get_market_trend(df):
         }
             
     except Exception as e:
-        print(f"❌ 技术指标数据准备失败: {e}")
+        print(f"❌ 移动平均线数据准备失败: {e}")
         traceback.print_exc()
         return {
-            'indicators_text': '技术指标数据不可用'
+            'indicators_text': '移动平均线数据不可用'
         }
 
 def get_gold_ohlcv_enhanced():
@@ -314,14 +279,7 @@ def get_gold_ohlcv_enhanced():
                 'sma_30': current_data.get('sma_30', 0),
                 'sma_60': current_data.get('sma_60', 0),
                 'sma_120': current_data.get('sma_120', 0),
-                'sma_240': current_data.get('sma_240', 0),
-                'rsi': current_data.get('rsi', 0),
-                'macd': current_data.get('macd', 0),
-                'macd_signal': current_data.get('macd_signal', 0),
-                'macd_histogram': current_data.get('macd_histogram', 0),
-                'bb_upper': current_data.get('bb_upper', 0),
-                'bb_lower': current_data.get('bb_lower', 0),
-                'bb_position': current_data.get('bb_position', 0)
+                'sma_240': current_data.get('sma_240', 0)
             },
             'indicators_text': trend_data['indicators_text'],  # 技术指标文本
             'full_data': df
@@ -822,10 +780,12 @@ def analyze_with_deepseek(price_data):
 
     【分析要求】
     1. 首先分析当前市场趋势（短期、中期、整体趋势）
-    2. 综合K线形态、技术指标、成交量和市场情绪
-    3. 成交量分析重点：放量突破、缩量整理、量价背离等
-    4. 给出明确的交易信号和止损位
-    5. 只做顺势单，除非当前行情是震荡整理并且价格处于最近5根K线的高点或者低点
+    2. 综合K线形态、移动平均线、成交量和市场情绪进行分析
+    3. 移动平均线用于辅助判断趋势方向，不要过度依赖
+    4. 成交量分析重点：放量突破、缩量整理、量价背离等
+    5. 给出明确的交易信号和止损位
+    6. 只做顺势单，顺势行情绝对不要博弈反转
+    7. 当行情是震荡整理并且价格处于最近5根K线的高点或者低点时，可以考虑做反弹单
 
     请用以下JSON格式回复：
     {{
@@ -850,7 +810,7 @@ def analyze_with_deepseek(price_data):
             model="deepseek-chat" if AI_API_TYPE.lower() == 'deepseek' else "deepseek-ai/DeepSeek-V3.2-Exp",
             messages=[
                 {"role": "system",
-                 "content": "您是一位急需资金为母亲治疗癌症的交易员，你现在需要从期货交易市场赚取足够的金额治疗你的母亲，专注于" + TRADE_CONFIG['timeframe'] + "周期趋势分析，尤其擅长量价分析，精通威科夫订单流理论。请结合K线形态和技术指标以及国际形势做出判断，并严格遵循JSON格式要求。"},
+                 "content": "您是一位急需资金为母亲治疗癌症的交易员，你现在需要从期货交易市场赚取足够的金额治疗你的母亲，专注于" + TRADE_CONFIG['timeframe'] + "周期趋势分析，尤其擅长K线形态和量价分析，精通威科夫订单流理论和Price Action交易法。移动平均线仅用于辅助判断趋势，主要依据K线形态、价格结构和成交量做出判断。严格遵循JSON格式要求。"},
                 {"role": "user", "content": prompt}
             ],
             stream=False,

@@ -37,7 +37,7 @@ else:
 # 交易参数配置 - 针对COMEX黄金期货
 TRADE_CONFIG = {
     'symbol': 'GCEZ25',  # COMEX黄金期货主力合约
-    'timeframe': '5m',  # 使用15分钟K线
+    'timeframe': '5m',  # 
     'test_mode': False,  # 测试模式
     'data_points': 240,  # 
     # 智能仓位参数
@@ -95,12 +95,22 @@ def get_timeframe_constant(timeframe_str):
     }
     return timeframe_map.get(timeframe_str, mt5.TIMEFRAME_M15)
 
-def get_gold_futures_data():
-    """从MT5获取黄金期货K线数据"""
+def get_gold_futures_data(timeframe_str=None, data_points=None):
+    """从MT5获取黄金期货K线数据
+    
+    Args:
+        timeframe_str: 时间周期字符串，如'5m', '4h'等。如果为None，使用配置的timeframe
+        data_points: 获取的K线数量。如果为None，使用配置的data_points
+    """
     try:
         symbol = TRADE_CONFIG['symbol']
-        timeframe = get_timeframe_constant(TRADE_CONFIG['timeframe'])
-        data_points = TRADE_CONFIG['data_points']
+        if timeframe_str is None:
+            timeframe_str = TRADE_CONFIG['timeframe']
+        if data_points is None:
+            data_points = TRADE_CONFIG['data_points']
+        
+        timeframe = get_timeframe_constant(timeframe_str)
+        timeframe_display = timeframe_str
         
         # 1. 确保品种在市场观察窗口中（这样数据才会实时更新）
         if not mt5.symbol_select(symbol, True):
@@ -165,7 +175,7 @@ def get_gold_futures_data():
         current_data = df.iloc[-1]
         previous_data = df.iloc[-2] if len(df) > 1 else current_data
         
-        print(f"✅ 成功从MT5获取 {len(df)} 根已完成的K线数据")
+        print(f"✅ 成功从MT5获取 {len(df)} 根已完成的{timeframe_display}K线数据")
         print(f"   时间范围: {df['timestamp'].iloc[0]} 至 {df['timestamp'].iloc[-1]}")
         print(f"   最新K线时间: {df['timestamp'].iloc[-1]}")
         print(f"   最新收盘价: {current_data['close']:.2f}")
@@ -182,7 +192,7 @@ def get_gold_futures_data():
             'high': float(current_data['high']),
             'low': float(current_data['low']),
             'volume': float(current_data['volume']),
-            'timeframe': TRADE_CONFIG['timeframe'],
+            'timeframe': timeframe_display,
             'price_change': ((current_data['close'] - previous_data['close']) / previous_data['close']) * 100,
             'kline_data': df[['timestamp', 'open', 'high', 'low', 'close', 'volume']].tail(30).to_dict('records'),
             'full_data': df
@@ -246,9 +256,9 @@ def get_market_trend(df):
         }
 
 def get_gold_ohlcv_enhanced():
-    """增强版：获取黄金K线数据并计算技术指标"""
+    """增强版：获取黄金K线数据并计算技术指标，同时获取4小时周期数据"""
     try:
-        # 获取基础数据
+        # 获取配置周期的基础数据
         price_data = get_gold_futures_data()
         if not price_data:
             return None
@@ -258,11 +268,30 @@ def get_gold_ohlcv_enhanced():
         # 计算技术指标
         df = calculate_technical_indicators(df)
         
-        current_data = df.iloc[-1]
-        previous_data = df.iloc[-2]
 
         # 获取技术指标文本（不调用AI）
-        trend_data = get_market_trend(df)
+        indicators_text = get_market_trend(df)['indicators_text']
+
+        # 获取4小时周期的K线数据
+        print(f"\n📊 获取4小时周期K线数据作为参考...")
+        price_data_4h = get_gold_futures_data(timeframe_str='4h', data_points=TRADE_CONFIG['data_points'])
+        
+        h4_kline_data = None
+        h4_indicators_text = ""
+        if price_data_4h:
+            # 获取4小时K线数据
+            h4_kline_data = price_data_4h['kline_data']
+            print(f"✅ 成功获取{len(h4_kline_data)}根4小时K线数据")
+            
+            # 计算4小时周期的技术指标
+            df_4h = price_data_4h['full_data']
+            df_4h = calculate_technical_indicators(df_4h)
+            
+            # 生成4小时周期的移动平均线文本
+            trend_data_4h = get_market_trend(df_4h)
+            h4_indicators_text = trend_data_4h['indicators_text'].replace('【移动平均线数据】', '【4小时周期移动平均线数据】')
+        else:
+            print(f"⚠️ 获取4小时K线数据失败")
 
         return {
             'price': price_data['price'],
@@ -273,15 +302,9 @@ def get_gold_ohlcv_enhanced():
             'timeframe': TRADE_CONFIG['timeframe'],
             'price_change': price_data['price_change'],
             'kline_data': price_data['kline_data'],
-            'technical_data': {
-                'sma_5': current_data.get('sma_5', 0),
-                'sma_15': current_data.get('sma_15', 0),
-                'sma_30': current_data.get('sma_30', 0),
-                'sma_60': current_data.get('sma_60', 0),
-                'sma_120': current_data.get('sma_120', 0),
-                'sma_240': current_data.get('sma_240', 0)
-            },
-            'indicators_text': trend_data['indicators_text'],  # 技术指标文本
+            'h4_kline_data': h4_kline_data,  # 4小时K线数据
+            'indicators_text': indicators_text,  # 配置周期技术指标文本
+            'h4_indicators_text': h4_indicators_text,  # 4小时周期技术指标文本
             'full_data': df
         }
     except Exception as e:
@@ -744,13 +767,23 @@ def execute_mt5_trade(signal_data, price_data):
 def analyze_with_deepseek(price_data):
     """使用DeepSeek分析黄金市场并生成交易信号（一次性完成趋势分析和交易决策）"""
     
-    # 构建K线数据文本
+    # 构建配置周期K线数据文本
     kline_text = f"【最近30根{TRADE_CONFIG['timeframe']}K线数据】\n"
     for i, kline in enumerate(price_data['kline_data'][-30:]):
         trend = "阳线" if kline['close'] > kline['open'] else "阴线"
         change = ((kline['close'] - kline['open']) / kline['open']) * 100
         volume = kline.get('volume', 0)
         kline_text += f"K线{i + 1}: {trend} 开:{kline['open']:.2f} 高:{kline['high']:.2f} 低:{kline['low']:.2f} 收:{kline['close']:.2f} 涨跌:{change:+.2f}% 成交量:{volume:.0f}\n"
+    
+    # 构建4小时K线数据文本（如果有的话）
+    h4_kline_text = ""
+    if price_data.get('h4_kline_data'):
+        h4_kline_text = f"\n【最近30根4h(四小时)K线数据 - 用于判断大周期趋势】\n"
+        for i, kline in enumerate(price_data['h4_kline_data'][-30:]):
+            trend = "阳线" if kline['close'] > kline['open'] else "阴线"
+            change = ((kline['close'] - kline['open']) / kline['open']) * 100
+            volume = kline.get('volume', 0)
+            h4_kline_text += f"4H-K线{i + 1}: {trend} 开:{kline['open']:.2f} 高:{kline['high']:.2f} 低:{kline['low']:.2f} 收:{kline['close']:.2f} 涨跌:{change:+.2f}% 成交量:{volume:.0f}\n"
     
     #print(kline_text)
 
@@ -762,6 +795,7 @@ def analyze_with_deepseek(price_data):
 
     # 获取技术指标文本
     indicators_text = price_data.get('indicators_text', '技术指标数据不可用')
+    h4_indicators_text = price_data.get('h4_indicators_text', '')
 
     prompt = f"""
     你是一个专业的黄金期货交易分析师。请基于以下COMEX黄金期货 {TRADE_CONFIG['timeframe']}周期数据进行分析：
@@ -776,16 +810,17 @@ def analyze_with_deepseek(price_data):
 
     {kline_text}
 
+    {h4_kline_text}
+
     {indicators_text}
+
+    {h4_indicators_text}
 
 
 
     【分析要求】
-    1. 首先分析当前市场趋势（短期、中期、整体趋势）
-    2. 综合K线形态、移动平均线、成交量和市场情绪进行分析
-    3. 移动平均线用于辅助判断趋势方向，不要过度依赖
-    4. 成交量分析重点：放量突破、缩量整理、量价背离等
-    5. 给出明确的交易信号和止损位
+    1. 结合给你的数据自行分析当前市场趋势
+    2. 给出明确的交易信号和止损位
 
 
     请用以下JSON格式回复：
@@ -811,7 +846,7 @@ def analyze_with_deepseek(price_data):
             model="deepseek-chat" if AI_API_TYPE.lower() == 'deepseek' else "deepseek-ai/DeepSeek-V3.2-Exp",
             messages=[
                 {"role": "system",
-                 "content": "您是一位急需资金为母亲治疗癌症的交易员，你现在需要从期货交易市场赚取足够的金额治疗你的母亲，专注于" + TRADE_CONFIG['timeframe'] + "周期趋势分析，尤其擅长K线形态和量价分析，精通威科夫订单流理论和Price Action交易法。移动平均线仅用于辅助判断趋势，主要依据K线形态、价格结构和成交量做出判断。严格遵循JSON格式要求。"},
+                 "content": "您是一位急需资金为母亲治疗癌症的交易员，你现在需要从期货交易市场赚取足够的金额治疗你的母亲，专注于" + TRADE_CONFIG['timeframe'] + "周期趋势分析，尤其擅长K线形态和量价分析，精通并专注于威科夫订单流理论和Price Action交易法。严格遵循JSON格式要求。"},
                 {"role": "user", "content": prompt}
             ],
             stream=False,

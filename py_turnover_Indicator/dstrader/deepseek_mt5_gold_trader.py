@@ -48,7 +48,7 @@ TRADE_CONFIG = {
         'low_confidence_multiplier': 0.5,
         'max_position_ratio': 0.1,  # 单次最大仓位比例
         'trend_strength_multiplier': 1,
-        'max_total_lots': 2.0,  # 最大总持仓手数（所有同方向订单加起来）
+        'max_total_lots': 1.0,  # 最大总持仓手数（所有同方向订单加起来）
         'enable_position_limit': True  # 是否启用仓位限制
     }
 }
@@ -171,10 +171,10 @@ def get_gold_futures_data():
         print(f"   最新收盘价: {current_data['close']:.2f}")
         
         # 显示最后5根K线的时间和收盘价，方便调试
-        print(f"   最后5根K线详情:")
-        for i in range(max(0, len(df)-5), len(df)):
-            kline = df.iloc[i]
-            print(f"      {kline['timestamp']} - 收盘: {kline['close']:.2f}")
+        # print(f"   最后5根K线详情:")
+        # for i in range(max(0, len(df)-5), len(df)):
+        #     kline = df.iloc[i]
+        #     print(f"      {kline['timestamp']} - 收盘: {kline['close']:.2f}")
         
         return {
             'price': float(current_data['close']),
@@ -184,7 +184,7 @@ def get_gold_futures_data():
             'volume': float(current_data['volume']),
             'timeframe': TRADE_CONFIG['timeframe'],
             'price_change': ((current_data['close'] - previous_data['close']) / previous_data['close']) * 100,
-            'kline_data': df[['timestamp', 'open', 'high', 'low', 'close', 'volume']].tail(10).to_dict('records'),
+            'kline_data': df[['timestamp', 'open', 'high', 'low', 'close', 'volume']].tail(30).to_dict('records'),
             'full_data': df
         }
         
@@ -745,12 +745,14 @@ def analyze_with_deepseek(price_data):
     """使用DeepSeek分析黄金市场并生成交易信号（一次性完成趋势分析和交易决策）"""
     
     # 构建K线数据文本
-    kline_text = f"【最近20根{TRADE_CONFIG['timeframe']}K线数据】\n"
-    for i, kline in enumerate(price_data['kline_data'][-20:]):
+    kline_text = f"【最近30根{TRADE_CONFIG['timeframe']}K线数据】\n"
+    for i, kline in enumerate(price_data['kline_data'][-30:]):
         trend = "阳线" if kline['close'] > kline['open'] else "阴线"
         change = ((kline['close'] - kline['open']) / kline['open']) * 100
         volume = kline.get('volume', 0)
         kline_text += f"K线{i + 1}: {trend} 开:{kline['open']:.2f} 高:{kline['high']:.2f} 低:{kline['low']:.2f} 收:{kline['close']:.2f} 涨跌:{change:+.2f}% 成交量:{volume:.0f}\n"
+    
+    #print(kline_text)
 
     # 添加上次交易信号
     signal_text = ""
@@ -776,7 +778,7 @@ def analyze_with_deepseek(price_data):
 
     {indicators_text}
 
-    {signal_text}
+
 
     【分析要求】
     1. 首先分析当前市场趋势（短期、中期、整体趋势）
@@ -784,8 +786,7 @@ def analyze_with_deepseek(price_data):
     3. 移动平均线用于辅助判断趋势方向，不要过度依赖
     4. 成交量分析重点：放量突破、缩量整理、量价背离等
     5. 给出明确的交易信号和止损位
-    6. 只做顺势单，顺势行情绝对不要博弈反转
-    7. 当行情是震荡整理并且价格处于最近5根K线的高点或者低点时，可以考虑做反弹单
+    6. 如果是顺势行情，绝对不要博弈反转；如果短期、中期趋势是震荡整理并且价格处于最近5根K线的高点或者低点时，可以考虑做反弹单
 
     请用以下JSON格式回复：
     {{

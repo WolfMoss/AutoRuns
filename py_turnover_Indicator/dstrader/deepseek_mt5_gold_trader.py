@@ -8,6 +8,7 @@ import json
 from datetime import datetime, timedelta
 import traceback
 import sys
+import requests
 
 # 设置标准输出编码为UTF-8
 if hasattr(sys.stdout, 'reconfigure'):
@@ -17,6 +18,68 @@ load_dotenv()
 
 # 获取API类型配置
 AI_API_TYPE = os.getenv('AI_API_TYPE', 'deepseek')
+
+# 企业微信webhook配置
+WECHAT_WEBHOOK_URL = os.getenv('WECHAT_WEBHOOK_URL', '')
+
+def format_ai_analysis_for_webhook(signal_data, price_data):
+    """将AI分析结果格式化为企业微信webhook消息格式"""
+    message = f"📊 **黄金AI交易分析** 📊\n"
+    message += f"当前价格: ${price_data['price']:,.2f}\n"
+    message += f"价格变化: {price_data['price_change']:+.2f}%\n\n"
+    
+    # 添加趋势分析
+    if 'trend_analysis' in signal_data:
+        trend = signal_data['trend_analysis']
+        message += f"🎯 **趋势判断**:\n"
+        message += f"- 短期趋势: {trend.get('short_term', 'N/A')}\n"
+        message += f"- 中期趋势: {trend.get('medium_term', 'N/A')}\n"
+        message += f"- 整体趋势: {trend.get('overall', 'N/A')}\n"
+        message += f"- 趋势强度: {trend.get('trend_strength', 'N/A')}\n\n"
+    
+    # 添加交易信号
+    message += f"📈 **交易信号**:\n"
+    message += f"- 信号: {signal_data['signal']}\n"
+    message += f"- 信心: {signal_data['confidence']}\n"
+    message += f"- 理由: {signal_data['reason']}\n"
+    
+    # 添加止损价格
+    if signal_data.get('stop_loss') is not None:
+        message += f"- AI止损: ${signal_data['stop_loss']:.2f}\n"
+        message += f"- 止盈策略: 自动计算（盈亏比1:1.1）\n"
+    else:
+        message += f"- 止损: 未设置\n"
+    
+    message += f"\n分析时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    return message
+
+def send_to_wechat_webhook(message):
+    """发送消息到企业微信webhook"""
+    if not WECHAT_WEBHOOK_URL:
+        print("⚠️ 未配置企业微信Webhook URL，跳过发送")
+        return False
+    
+    try:
+        data = {
+            "msgtype": "markdown",
+            "markdown": {
+                "content": message
+            }
+        }
+        response = requests.post(WECHAT_WEBHOOK_URL, json=data)
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('errcode') == 0:
+                print("✅ 已成功发送到企业微信")
+                return True
+            else:
+                print(f"❌ 企业微信发送失败: {result.get('errmsg', '未知错误')}")
+        else:
+            print(f"❌ 企业微信请求失败，状态码: {response.status_code}")
+    except Exception as e:
+        print(f"❌ 企业微信发送异常: {str(e)}")
+    
+    return False
 
 # 根据配置初始化AI客户端
 if AI_API_TYPE.lower() == 'siliconflow':
@@ -36,7 +99,7 @@ else:
 
 # 交易参数配置 - 针对COMEX黄金期货
 TRADE_CONFIG = {
-    'symbol': 'GCEZ25',  # COMEX黄金期货主力合约
+    'symbol': 'BTCUSDm',  # COMEX黄金期货主力合约
     'timeframe': '5m',  # 
     'test_mode': False,  # 测试模式
     'data_points': 240,  # 
@@ -858,7 +921,7 @@ def analyze_with_deepseek(price_data):
         # 确保结果中的中文能被正确处理
         if isinstance(result, bytes):
             result = result.decode('utf-8')
-        print(f"🤖 AI完整分析回复: {result}")
+        #print(f"🤖 AI完整分析回复: {result}")
 
         # 提取JSON部分
         start_idx = result.find('{')
@@ -921,6 +984,10 @@ def trading_bot():
     if not signal_data:
         return
 
+    # 发送分析结果到企业微信webhook
+    webhook_message = format_ai_analysis_for_webhook(signal_data, price_data)
+    send_to_wechat_webhook(webhook_message)
+
     print(f"📊 AI分析结果:")
     
     # 显示趋势分析（如果有）
@@ -943,6 +1010,8 @@ def trading_bot():
         print(f"      - 止盈策略: 自动计算（盈亏比1:1.1）")
     else:
         print(f"      - 止损: 未设置")
+        
+
 
     # 3. 执行MT5交易
     if not TRADE_CONFIG['test_mode']:

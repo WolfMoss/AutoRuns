@@ -1,0 +1,18 @@
+{
+    "trade_config": {
+        "symbol": "BTCUSDm",
+        "timeframe": "1m",
+        "test_mode": false,
+        "data_points": 240,
+        "position_management": {
+            "base_lot_amount": 1,
+            "high_confidence_multiplier": 1.0,
+            "medium_confidence_multiplier": 0.5,
+            "low_confidence_multiplier": 0.3,
+            "max_position_ratio": 1,
+            "trend_strength_multiplier": 1.0,
+            "max_total_lots": 1.0,
+            "enable_position_limit": true
+        }
+    }
+}

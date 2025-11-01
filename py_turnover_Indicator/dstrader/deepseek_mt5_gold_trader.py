@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import traceback
 import sys
 import requests
+import pathlib
 
 # 设置标准输出编码为UTF-8
 if hasattr(sys.stdout, 'reconfigure'):
@@ -21,6 +22,50 @@ AI_API_TYPE = os.getenv('AI_API_TYPE', 'deepseek')
 
 # 企业微信webhook配置
 WECHAT_WEBHOOK_URL = os.getenv('WECHAT_WEBHOOK_URL', '')
+
+# 加载配置文件
+def load_config():
+    """从配置文件加载交易配置"""
+    config_path = pathlib.Path(__file__).parent / 'config.json'
+    default_config = {
+        "trade_config": {
+            "symbol": "BTCUSDm",
+            "timeframe": "5m",
+            "test_mode": False,
+            "data_points": 240,
+            "position_management": {
+                "base_lot_amount": 1,
+                "high_confidence_multiplier": 1.0,
+                "medium_confidence_multiplier": 1.0,
+                "low_confidence_multiplier": 0.5,
+                "max_position_ratio": 0.1,
+                "trend_strength_multiplier": 1.0,
+                "max_total_lots": 1.0,
+                "enable_position_limit": True
+            }
+        }
+    }
+    
+    try:
+        if config_path.exists():
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                print(f"✅ 已从配置文件加载交易配置")
+                return config.get('trade_config', default_config['trade_config'])
+        else:
+            print(f"⚠️ 配置文件不存在，使用默认配置")
+            # 创建默认配置文件
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(default_config, f, ensure_ascii=False, indent=4)
+                print(f"✅ 已创建默认配置文件: {config_path}")
+            return default_config['trade_config']
+    except Exception as e:
+        print(f"❌ 加载配置文件失败: {str(e)}")
+        print(f"使用默认配置")
+        return default_config['trade_config']
+
+# 加载交易配置
+TRADE_CONFIG = load_config()
 
 def format_ai_analysis_for_webhook(signal_data, price_data):
     """将AI分析结果格式化为企业微信webhook消息格式"""
@@ -97,24 +142,7 @@ else:
 
 
 
-# 交易参数配置 - 针对COMEX黄金期货
-TRADE_CONFIG = {
-    'symbol': 'BTCUSDm',  # COMEX黄金期货主力合约
-    'timeframe': '5m',  # 
-    'test_mode': False,  # 测试模式
-    'data_points': 240,  # 
-    # 智能仓位参数
-    'position_management': {
-        'base_lot_amount': 1,  # 基础交易手数
-        'high_confidence_multiplier': 1.0,
-        'medium_confidence_multiplier': 1.0,
-        'low_confidence_multiplier': 0.5,
-        'max_position_ratio': 0.1,  # 单次最大仓位比例
-        'trend_strength_multiplier': 1,
-        'max_total_lots': 1.0,  # 最大总持仓手数（所有同方向订单加起来）
-        'enable_position_limit': True  # 是否启用仓位限制
-    }
-}
+# 交易参数配置已移至config.json文件
 
 def setup_mt5():
     """初始化MT5连接"""
@@ -643,13 +671,6 @@ def execute_mt5_trade(signal_data, price_data):
             # 平掉反向持仓
             closed_count = close_positions_by_direction(symbol, opposite_direction)
             
-            if closed_count > 0:
-                print(f"\n✅ 已平掉 {closed_count} 个反向持仓")
-                # 等待一小段时间确保平仓完成
-                time.sleep(1)
-            else:
-                print(f"\n❌ 反向持仓平仓失败，取消本次开仓")
-                return False
         else:
             print(f"   无反向持仓，可以继续开仓")
         
@@ -861,7 +882,7 @@ def analyze_with_deepseek(price_data):
     h4_indicators_text = price_data.get('h4_indicators_text', '')
 
     prompt = f"""
-    你是一个专业的黄金期货交易分析师。请基于以下COMEX黄金期货 {TRADE_CONFIG['timeframe']}周期数据进行分析：
+    你是一个专业的交易分析师。请基于以下品种 {TRADE_CONFIG['timeframe']}周期数据进行分析：
 
     【当前行情】
     - 当前价格: ${price_data['price']:,.2f}
@@ -882,7 +903,7 @@ def analyze_with_deepseek(price_data):
 
 
     【分析要求】
-    1. 结合给你的数据自行分析当前市场趋势
+    1. 结合给你的数据自行分析当前市场趋势,震荡行情做反转套利,突破震荡行情做顺势交易,请灵活决策
     2. 给出明确的交易信号和止损位
 
 
@@ -970,12 +991,12 @@ def trading_bot():
     print(f"执行时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 
-    # 1. 获取黄金期货数据
+    # 1. 获取期货数据
     price_data = get_gold_ohlcv_enhanced()
     if not price_data:
         return
 
-    print(f"黄金当前价格: ${price_data['price']:,.2f}")
+    print(f"当前价格: ${price_data['price']:,.2f}")
     print(f"数据周期: {TRADE_CONFIG['timeframe']}")
     print(f"价格变化: {price_data['price_change']:+.2f}%")
 
@@ -1179,7 +1200,7 @@ def get_execution_schedule_description():
 
 def main():
     """主函数"""
-    print("COMEX黄金期货 MT5自动交易机器人启动成功！")
+    print("MT5自动交易机器人启动成功！")
     print("融合技术指标策略 + MT5实盘接口")
 
     if TRADE_CONFIG['test_mode']:

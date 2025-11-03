@@ -26,7 +26,7 @@ WECHAT_WEBHOOK_URL = os.getenv('WECHAT_WEBHOOK_URL', '')
 # 加载配置文件
 def load_config():
     """从配置文件加载交易配置"""
-    config_path = pathlib.Path(__file__).parent / 'config.json'
+    config_path = 'config.json'
     default_config = {
         "trade_config": {
             "symbol": "BTCUSDm",
@@ -47,18 +47,11 @@ def load_config():
     }
     
     try:
-        if config_path.exists():
-            with open(config_path, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-                print(f"✅ 已从配置文件加载交易配置")
-                return config.get('trade_config', default_config['trade_config'])
-        else:
-            print(f"⚠️ 配置文件不存在，使用默认配置")
-            # 创建默认配置文件
-            with open(config_path, 'w', encoding='utf-8') as f:
-                json.dump(default_config, f, ensure_ascii=False, indent=4)
-                print(f"✅ 已创建默认配置文件: {config_path}")
-            return default_config['trade_config']
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+            print(f"✅ 已从配置文件加载交易配置")
+            return config.get('trade_config', default_config['trade_config'])
+
     except Exception as e:
         print(f"❌ 加载配置文件失败: {str(e)}")
         print(f"使用默认配置")

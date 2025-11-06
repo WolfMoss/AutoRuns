@@ -29,7 +29,7 @@ def load_config():
     config_path = 'config.json'
     default_config = {
         "trade_config": {
-            "symbol": "BTCUSDm",
+            "symbol": "GCEZ25",
             "timeframe": "5m",
             "test_mode": False,
             "data_points": 240,
@@ -896,7 +896,9 @@ def analyze_with_deepseek(price_data):
 
 
     【分析要求】
-    1. 结合给你的数据自行分析当前市场趋势,震荡行情做反转套利,突破震荡行情做顺势交易,请灵活决策
+    1. 结合给你的数据自行分析当前市场趋势
+    2. 关注多次上下影线无法突破的支撑位和压力位，一旦突破支撑位或压力位，则顺势交易
+    3. 关注
     2. 给出明确的交易信号和止损位
 
 

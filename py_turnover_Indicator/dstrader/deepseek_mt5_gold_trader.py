@@ -647,8 +647,28 @@ def execute_mt5_trade(signal_data, price_data):
             signal_direction = 'sell'
             opposite_direction = 'buy'
         else:
-            print("🔄 HOLD信号，不执行交易")
-            return True
+            # HOLD信号：检查是否有持仓，如果有则平仓
+            print("🔄 HOLD信号，检查是否需要平仓...")
+            total_positions = get_total_position_by_direction(symbol)
+            
+            if total_positions['total'] > 0:
+                print(f"⚠️ 检测到持仓，执行平仓操作")
+                print(f"   持仓订单数: {total_positions['total']}")
+                print(f"   做多总手数: {total_positions['buy']:.2f}")
+                print(f"   做空总手数: {total_positions['sell']:.2f}")
+                
+                # 平掉所有持仓
+                closed_count = close_positions_by_direction(symbol, direction=None)
+                
+                if closed_count > 0:
+                    print(f"✅ 成功平掉 {closed_count} 个持仓")
+                    return True
+                else:
+                    print(f"❌ 平仓操作失败")
+                    return False
+            else:
+                print("📭 当前无持仓，无需操作")
+                return True
         
         # 检查是否存在反向持仓，如果存在则先平仓
         print(f"\n🔍 检查反向持仓...")
@@ -898,8 +918,11 @@ def analyze_with_deepseek(price_data):
     【分析要求】
     1. 结合给你的数据自行分析当前市场趋势
     2. 关注多次上下影线无法突破的支撑位和压力位，一旦突破支撑位或压力位，则顺势交易
-    3. 关注
-    2. 给出明确的交易信号和止损位
+    3. 关注大周期的前高前低位置，结合威科夫量价理论，如果合适可以做小止损的反转交易
+    4. 不要在量价都顺势的时候博弈反转
+    5. 关注量价背离的反转机会
+    6. 要勇于捕捉在大级别支撑阻力位的异常大成交量的反转机会
+    7. 给出明确的交易信号和止损位
 
 
     请用以下JSON格式回复：

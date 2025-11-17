@@ -920,9 +920,7 @@ def analyze_with_deepseek(price_data):
     2. 关注多次上下影线无法突破的支撑位和压力位，一旦突破支撑位或压力位，则顺势交易
     3. 关注大周期的前高前低位置，结合威科夫量价理论，如果合适可以做小止损的反转交易
     4. 不要在量价都顺势的时候博弈反转
-    5. 关注量价背离的反转机会
-    6. 要勇于捕捉在大级别支撑阻力位的异常大成交量的反转机会
-    7. 给出明确的交易信号和止损位
+    5. 给出明确的交易信号和止损位
 
 
     请用以下JSON格式回复：
@@ -945,7 +943,7 @@ def analyze_with_deepseek(price_data):
     try:
         # 不需要额外的编码转换，直接使用原始prompt
         response = ai_client.chat.completions.create(
-            model="deepseek-chat" if AI_API_TYPE.lower() == 'deepseek' else "deepseek-ai/DeepSeek-V3.2-Exp",
+            model="deepseek-chat" if AI_API_TYPE.lower() == 'deepseek' else "Qwen/Qwen3-Next-80B-A3B-Thinking",
             messages=[
                 {"role": "system",
                  "content": "您是一位急需资金为母亲治疗癌症的交易员，你现在需要从期货交易市场赚取足够的金额治疗你的母亲，专注于" + TRADE_CONFIG['timeframe'] + "周期趋势分析，尤其擅长K线形态和量价分析，精通并专注于威科夫订单流理论和Price Action交易法。严格遵循JSON格式要求。"},

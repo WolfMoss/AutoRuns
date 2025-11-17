@@ -1,7 +1,7 @@
 {
     "trade_config": {
         "symbol": "GCEZ25",
-        "timeframe": "5m",
+        "timeframe": "15m",
         "test_mode": false,
         "data_points": 240,
         "position_management": {

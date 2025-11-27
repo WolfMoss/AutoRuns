@@ -1,2 +1,0 @@
-websocket-client>=1.6.0
-pysocks>=1.7.1 

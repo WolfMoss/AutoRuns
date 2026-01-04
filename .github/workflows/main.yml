@@ -30,6 +30,7 @@ jobs:
         pip install requests
         pip install openpyxl
         pip install xlsxwriter
+        pip install chinesecalendar
     - name: Run weather Report
       run: |
         ls

@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>短线情绪展示 - 近两个月数据</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .chart {
+            height: 300px;
+            position: relative;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .data-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .data-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f5f5f5;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .positive {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .negative {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .neutral {
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .date-filter {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .date-filter select {
+            padding: 8px 15px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 14px;
+            margin: 0 5px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .data-table {
+                font-size: 12px;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 短线情绪数据展示</h1>
+        <p class="subtitle">近两个月短线情绪分析</p>
+
+        <div id="errorMessage" class="error" style="display: none;"></div>
+
+        <div id="content" style="display: none;">
+            <div class="date-filter">
+                <label>显示周期：</label>
+                <select id="periodSelect">
+                    <option value="60">近两个月 (60天)</option>
+                    <option value="30">近一个月 (30天)</option>
+                    <option value="14">近两周 (14天)</option>
+                    <option value="7">近一周 (7天)</option>
+                </select>
+            </div>
+
+            <div class="stats-grid" id="statsGrid"></div>
+
+            <div class="chart-container">
+                <div class="chart-title">📊 涨停数趋势</div>
+                <div class="chart" id="ztChart"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">📊 连板率趋势</div>
+                <div class="chart" id="lblChart"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">📊 晋级率趋势</div>
+                <div class="chart" id="jjlChart"></div>
+            </div>
+
+            <table class="data-table" id="dataTable">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>星期</th>
+                        <th>涨停数</th>
+                        <th>跌停数</th>
+                        <th>涨跌停比</th>
+                        <th>炸板率</th>
+                        <th>连板率</th>
+                        <th>首板数</th>
+                        <th>连板数</th>
+                        <th>一进二率</th>
+                        <th>二进三率</th>
+                        <th>三进四率</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <p>正在加载数据...</p>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let filteredData = [];
+
+        // 页面加载时自动读取文件
+        window.addEventListener('DOMContentLoaded', function() {
+            loadExcelFile();
+        });
+
+        // 自动加载Excel文件
+        async function loadExcelFile() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+
+            try {
+                // 尝试读取同目录下的Excel文件
+                const response = await fetch('晋级率模板.xlsx');
+                if (!response.ok) {
+                    throw new Error('无法读取文件，请确保文件在同目录下且通过Web服务器访问（不能直接双击打开HTML文件）');
+                }
+
+                const arrayBuffer = await response.arrayBuffer();
+                const data = new Uint8Array(arrayBuffer);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+                processData(jsonData);
+            } catch (error) {
+                showError('读取文件失败: ' + error.message + '<br><br>提示：请通过Web服务器访问此页面（如使用Python: python -m http.server）');
+            }
+        }
+
+        // 处理数据
+        function processData(jsonData) {
+            if (jsonData.length < 2) {
+                showError('Excel文件数据不足');
+                return;
+            }
+
+            // 获取表头（假设第一行是表头）
+            const headers = jsonData[0];
+            
+            // 查找关键列的索引
+            const colMap = {};
+            headers.forEach((h, i) => {
+                if (h) colMap[String(h).trim()] = i;
+            });
+
+            // 解析数据行
+            allData = [];
+            for (let i = 1; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (!row || !row[0]) continue;
+
+                const dateStr = String(row[0]).trim();
+                if (!dateStr || dateStr.length !== 8) continue;
+
+                // 解析日期
+                const year = parseInt(dateStr.substring(0, 4));
+                const month = parseInt(dateStr.substring(4, 6));
+                const day = parseInt(dateStr.substring(6, 8));
+                const date = new Date(year, month - 1, day);
+
+                if (isNaN(date.getTime())) continue;
+
+                // 提取数据
+                const dataItem = {
+                    date: date,
+                    dateStr: dateStr,
+                    weekday: row[1] || '',
+                    ztNum: parseFloat(row[2]) || 0,
+                    dtNum: parseFloat(row[3]) || 0,
+                    zdtb: row[4] || '0%',
+                    zbl: row[5] || '0%',
+                    zbnNum: parseFloat(row[6]) || 0,
+                    lbl: row[7] || '0%',
+                    yb: parseFloat(row[8]) || 0,
+                    lbs: parseFloat(row[9]) || 0,
+                    yzs: parseFloat(row[10]) || 0,
+                    yjel: row[11] || '0%',
+                    ejsl: row[12] || '0%',
+                    sjsl: row[13] || '0%',
+                    sjwl: row[14] || '0%',
+                    wjll: row[15] || '0%',
+                    ljql: row[16] || '0%',
+                    qjbl: row[17] || '0%',
+                    eb: parseFloat(row[20]) || 0,
+                    sb: parseFloat(row[21]) || 0,
+                    sib: parseFloat(row[22]) || 0,
+                    wub: parseFloat(row[23]) || 0,
+                    liub: parseFloat(row[24]) || 0,
+                    qib: parseFloat(row[25]) || 0,
+                    bab: parseFloat(row[26]) || 0,
+                    gb: parseFloat(row[27]) || 0
+                };
+
+                allData.push(dataItem);
+            }
+
+            // 按日期排序（最新的在前）
+            allData.sort((a, b) => b.date - a.date);
+
+            // 应用初始过滤
+            filterData(60);
+        }
+
+        // 过滤数据
+        function filterData(days) {
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+
+            filteredData = allData.filter(item => item.date >= cutoffDate);
+            filteredData.sort((a, b) => a.date - b.date); // 图表显示按时间正序
+
+            updateDisplay();
+        }
+
+        // 更新显示
+        function updateDisplay() {
+            if (filteredData.length === 0) {
+                showError('没有符合条件的数据');
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+
+            updateStats();
+            updateCharts();
+            updateTable();
+        }
+
+        // 更新统计卡片
+        function updateStats() {
+            const latest = filteredData[filteredData.length - 1];
+            const avgZt = filteredData.reduce((sum, d) => sum + d.ztNum, 0) / filteredData.length;
+            const avgLbl = filteredData.reduce((sum, d) => sum + parseFloat(d.lbl) || 0, 0) / filteredData.length;
+            const avgYjel = filteredData.reduce((sum, d) => sum + parseFloat(d.yjel) || 0, 0) / filteredData.length;
+
+            const stats = [
+                { label: '最新涨停数', value: latest.ztNum.toFixed(0) },
+                { label: '平均涨停数', value: avgZt.toFixed(1) },
+                { label: '最新连板率', value: latest.lbl },
+                { label: '平均连板率', value: avgLbl.toFixed(2) + '%' },
+                { label: '最新一进二率', value: latest.yjel },
+                { label: '平均一进二率', value: avgYjel.toFixed(2) + '%' },
+                { label: '最新跌停数', value: latest.dtNum.toFixed(0) },
+                { label: '最新炸板率', value: latest.zbl }
+            ];
+
+            const grid = document.getElementById('statsGrid');
+            grid.innerHTML = stats.map(stat => `
+                <div class="stat-card">
+                    <div class="stat-label">${stat.label}</div>
+                    <div class="stat-value">${stat.value}</div>
+                </div>
+            `).join('');
+        }
+
+        // 更新图表
+        function updateCharts() {
+            drawLineChart('ztChart', '涨停数', filteredData.map(d => d.ztNum), '#e74c3c');
+            drawLineChart('lblChart', '连板率', filteredData.map(d => parseFloat(d.lbl) || 0), '#3498db');
+            drawLineChart('jjlChart', '一进二率', filteredData.map(d => parseFloat(d.yjel) || 0), '#27ae60');
+        }
+
+        // 绘制折线图
+        function drawLineChart(containerId, label, values, color) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            if (values.length === 0) return;
+
+            const max = Math.max(...values);
+            const min = Math.min(...values);
+            const range = max - min || 1;
+            const width = container.offsetWidth - 30;
+            const height = container.offsetHeight - 30;
+            const padding = 15;
+
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `0 0 ${width + padding * 2} ${height + padding * 2}`);
+
+            // 绘制网格线
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (height / 5) * i;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', width + padding);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', '#e0e0e0');
+                line.setAttribute('stroke-width', '1');
+                svg.appendChild(line);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding - 5);
+                text.setAttribute('y', y + 4);
+                text.setAttribute('text-anchor', 'end');
+                text.setAttribute('font-size', '12');
+                text.setAttribute('fill', '#666');
+                text.textContent = (max - (range / 5) * i).toFixed(1);
+                svg.appendChild(text);
+            }
+
+            // 绘制折线
+            const points = values.map((v, i) => {
+                const x = padding + (width / (values.length - 1 || 1)) * i;
+                const y = padding + height - ((v - min) / range) * height;
+                return { x, y, value: v };
+            });
+
+            // 绘制区域
+            const areaPath = `M ${points[0].x} ${height + padding} ` +
+                points.map(p => `L ${p.x} ${p.y}`).join(' ') +
+                ` L ${points[points.length - 1].x} ${height + padding} Z`;
+
+            const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            area.setAttribute('d', areaPath);
+            area.setAttribute('fill', color);
+            area.setAttribute('opacity', '0.2');
+            svg.appendChild(area);
+
+            // 绘制折线
+            const linePath = 'M ' + points.map(p => `${p.x} ${p.y}`).join(' L ');
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            line.setAttribute('d', linePath);
+            line.setAttribute('fill', 'none');
+            line.setAttribute('stroke', color);
+            line.setAttribute('stroke-width', '2');
+            svg.appendChild(line);
+
+            // 绘制点
+            points.forEach((p, i) => {
+                if (i % Math.ceil(values.length / 10) === 0 || i === points.length - 1) {
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', p.x);
+                    circle.setAttribute('cy', p.y);
+                    circle.setAttribute('r', '4');
+                    circle.setAttribute('fill', color);
+                    svg.appendChild(circle);
+
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', p.x);
+                    text.setAttribute('y', p.y - 8);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('font-size', '10');
+                    text.setAttribute('fill', '#333');
+                    text.textContent = p.value.toFixed(1);
+                    svg.appendChild(text);
+                }
+            });
+
+            container.appendChild(svg);
+        }
+
+        // 更新表格
+        function updateTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            // 显示最新的数据（倒序）
+            [...filteredData].reverse().forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDate(item.dateStr)}</td>
+                    <td>${item.weekday}</td>
+                    <td class="positive">${item.ztNum}</td>
+                    <td class="negative">${item.dtNum}</td>
+                    <td>${item.zdtb}</td>
+                    <td>${item.zbl}</td>
+                    <td class="neutral">${item.lbl}</td>
+                    <td>${item.yb}</td>
+                    <td>${item.lbs}</td>
+                    <td class="neutral">${item.yjel}</td>
+                    <td class="neutral">${item.ejsl}</td>
+                    <td class="neutral">${item.sjsl}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 格式化日期
+        function formatDate(dateStr) {
+            if (dateStr.length !== 8) return dateStr;
+            return dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8);
+        }
+
+        // 显示错误
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        // 周期选择
+        document.getElementById('periodSelect').addEventListener('change', function(e) {
+            filterData(parseInt(e.target.value));
+        });
+    </script>
+</body>
+</html>

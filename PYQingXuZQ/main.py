@@ -9,6 +9,7 @@ import datetime
 import openpyxl
 import os
 import base64
+import chinese_calendar as cal
 
 
 def file_to_base64(file_path):
@@ -43,8 +44,13 @@ def print_hi(name):
         try:
             indexDate = nowdate + datetime.timedelta(days=-index)
             print(indexDate)
-            # if not is_workday(indexDate.date()):
-            #     continue
+            
+            # 检查是否是节假日或非工作日
+            indexDateOnly = indexDate.date()
+            if cal.is_holiday(indexDateOnly) or not cal.is_workday(indexDateOnly):
+                print(f'{indexDateOnly} 是节假日或非工作日，跳过')
+                continue
+            
             nowdateCode = indexDate.strftime('%Y%m%d')
 
             xingQi = indexDate.weekday() + 1
@@ -254,7 +260,7 @@ def print_hi(name):
     # 将文件转换为 Base64
     base64_string = file_to_base64(xlsxpatch)
 
-    print('Base64 编码:', base64_string)
+    #print('Base64 编码:', base64_string)
 
     # GitHub API 地址
     url = 'https://api.github.com/repos/{owner}/{repo}/contents/{path}'
@@ -289,6 +295,24 @@ def print_hi(name):
 
 # 按间距中的绿色按钮以运行脚本。
 if __name__ == '__main__':
+    today = datetime.date.today()
+    
+    # 首先检查是否是周末（周六或周日），周末直接不运行
+    weekday = today.weekday()  # 0=周一, 6=周日
+    if weekday >= 5:  # 5=周六, 6=周日
+        print(f'今天是周末 ({today})，脚本不运行')
+        exit(0)
+    
+    # 检查今天是否是节假日
+    if cal.is_holiday(today):
+        print(f'今天是节假日 ({today})，脚本不运行')
+        exit(0)
+    
+    # 检查今天是否是工作日（双重保险）
+    if not cal.is_workday(today):
+        print(f'今天不是工作日 ({today})，脚本不运行')
+        exit(0)
+    
     print_hi('PyCharm')
 
 # 访问 https://www.jetbrains.com/help/pycharm/ 获取 PyCharm 帮助

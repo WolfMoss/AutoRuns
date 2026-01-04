@@ -163,6 +163,28 @@
             text-align: center;
         }
 
+        .chart-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .chart-tooltip .tooltip-date {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .chart-tooltip .tooltip-value {
+            opacity: 0.9;
+        }
+
         .date-filter {
             text-align: center;
             margin-bottom: 20px;
@@ -225,6 +247,11 @@
             <div class="chart-container">
                 <div class="chart-title">📊 晋级率趋势</div>
                 <div class="chart" id="jjlChart"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">📊 涨跌停比趋势</div>
+                <div class="chart" id="zdtbChart"></div>
             </div>
 
             <table class="data-table" id="dataTable">
@@ -416,17 +443,28 @@
 
         // 更新图表
         function updateCharts() {
-            drawLineChart('ztChart', '涨停数', filteredData.map(d => d.ztNum), '#e74c3c');
-            drawLineChart('lblChart', '连板率', filteredData.map(d => parseFloat(d.lbl) || 0), '#3498db');
-            drawLineChart('jjlChart', '一进二率', filteredData.map(d => parseFloat(d.yjel) || 0), '#27ae60');
+            drawLineChart('ztChart', '涨停数', filteredData.map(d => d.ztNum), '#e74c3c', filteredData);
+            drawLineChart('lblChart', '连板率', filteredData.map(d => parseFloat(d.lbl) || 0), '#3498db', filteredData);
+            drawLineChart('jjlChart', '一进二率', filteredData.map(d => parseFloat(d.yjel) || 0), '#27ae60', filteredData);
+            // 涨跌停比：将字符串（如'5.2%'）转换为数字
+            drawLineChart('zdtbChart', '涨跌停比', filteredData.map(d => {
+                const zdtbStr = d.zdtb || '0%';
+                return parseFloat(zdtbStr.replace('%', '')) || 0;
+            }), '#9b59b6', filteredData);
         }
 
         // 绘制折线图
-        function drawLineChart(containerId, label, values, color) {
+        function drawLineChart(containerId, label, values, color, dataItems) {
             const container = document.getElementById(containerId);
             container.innerHTML = '';
 
             if (values.length === 0) return;
+
+            // 创建tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'chart-tooltip';
+            tooltip.id = containerId + '-tooltip';
+            container.appendChild(tooltip);
 
             const max = Math.max(...values);
             const min = Math.min(...values);
@@ -438,7 +476,15 @@
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', '100%');
             svg.setAttribute('height', '100%');
-            svg.setAttribute('viewBox', `0 0 ${width + padding * 2} ${height + padding * 2}`);
+            // 增加底部空间用于显示日期坐标轴
+            svg.setAttribute('viewBox', `0 0 ${width + padding * 2} ${height + padding * 2 + 25}`);
+
+            // 绘制折线点（先计算points，因为后面需要用到）
+            const points = values.map((v, i) => {
+                const x = padding + (width / (values.length - 1 || 1)) * i;
+                const y = padding + height - ((v - min) / range) * height;
+                return { x, y, value: v };
+            });
 
             // 绘制网格线
             for (let i = 0; i <= 5; i++) {
@@ -462,11 +508,37 @@
                 svg.appendChild(text);
             }
 
-            // 绘制折线
-            const points = values.map((v, i) => {
-                const x = padding + (width / (values.length - 1 || 1)) * i;
-                const y = padding + height - ((v - min) / range) * height;
-                return { x, y, value: v };
+            // 绘制底部日期坐标轴
+            const dateAxisY = height + padding + 5;
+            const dateLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            dateLine.setAttribute('x1', padding);
+            dateLine.setAttribute('y1', dateAxisY);
+            dateLine.setAttribute('x2', width + padding);
+            dateLine.setAttribute('y2', dateAxisY);
+            dateLine.setAttribute('stroke', '#333');
+            dateLine.setAttribute('stroke-width', '1');
+            svg.appendChild(dateLine);
+
+            // 绘制日期标签（每隔几个点显示一个日期）
+            const dateInterval = Math.max(1, Math.floor(values.length / 10));
+            points.forEach((p, i) => {
+                if (i % dateInterval === 0 || i === points.length - 1) {
+                    const dataItem = dataItems[i];
+                    if (dataItem) {
+                        const dateStr = formatDate(dataItem.dateStr);
+                        const dateParts = dateStr.split('-');
+                        const shortDate = dateParts[1] + '-' + dateParts[2]; // 显示 MM-DD
+                        
+                        const dateText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        dateText.setAttribute('x', p.x);
+                        dateText.setAttribute('y', dateAxisY + 15);
+                        dateText.setAttribute('text-anchor', 'middle');
+                        dateText.setAttribute('font-size', '10');
+                        dateText.setAttribute('fill', '#666');
+                        dateText.textContent = shortDate;
+                        svg.appendChild(dateText);
+                    }
+                }
             });
 
             // 绘制区域
@@ -489,8 +561,66 @@
             line.setAttribute('stroke-width', '2');
             svg.appendChild(line);
 
-            // 绘制点
+            // 绘制点和交互区域
             points.forEach((p, i) => {
+                // 创建可交互的透明区域（更大的点击/悬停区域）
+                const interactiveArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                interactiveArea.setAttribute('cx', p.x);
+                interactiveArea.setAttribute('cy', p.y);
+                interactiveArea.setAttribute('r', '8');
+                interactiveArea.setAttribute('fill', 'transparent');
+                interactiveArea.setAttribute('cursor', 'pointer');
+                interactiveArea.style.pointerEvents = 'all';
+                
+                // 获取对应的日期数据
+                const dataItem = dataItems[i];
+                const dateStr = dataItem ? formatDate(dataItem.dateStr) : '';
+                const valueStr = label === '涨跌停比' ? 
+                    (dataItem ? dataItem.zdtb : p.value.toFixed(2) + '%') :
+                    p.value.toFixed(label === '涨停数' ? 0 : 1) + (label === '涨停数' ? '' : '%');
+
+                // 鼠标悬停事件 - 显示tooltip
+                interactiveArea.addEventListener('mouseenter', function(e) {
+                    tooltip.innerHTML = `
+                        <div class="tooltip-date">${dateStr}</div>
+                        <div class="tooltip-value">${label}: ${valueStr}</div>
+                    `;
+                    tooltip.style.display = 'block';
+                });
+
+                // 鼠标移动事件 - tooltip跟随鼠标
+                interactiveArea.addEventListener('mousemove', function(e) {
+                    const containerRect = container.getBoundingClientRect();
+                    const mouseX = e.clientX - containerRect.left;
+                    const mouseY = e.clientY - containerRect.top;
+                    
+                    // tooltip显示在鼠标右下方
+                    tooltip.style.left = (mouseX + 10) + 'px';
+                    tooltip.style.top = (mouseY + 10) + 'px';
+                    
+                    // 确保tooltip不超出容器
+                    const tooltipRect = tooltip.getBoundingClientRect();
+                    if (tooltipRect.right > containerRect.right) {
+                        tooltip.style.left = (mouseX - tooltip.offsetWidth - 10) + 'px';
+                    }
+                    if (tooltipRect.bottom > containerRect.bottom) {
+                        tooltip.style.top = (mouseY - tooltip.offsetHeight - 10) + 'px';
+                    }
+                    if (tooltipRect.left < containerRect.left) {
+                        tooltip.style.left = '10px';
+                    }
+                    if (tooltipRect.top < containerRect.top) {
+                        tooltip.style.top = '10px';
+                    }
+                });
+
+                interactiveArea.addEventListener('mouseleave', function() {
+                    tooltip.style.display = 'none';
+                });
+
+                svg.appendChild(interactiveArea);
+
+                // 绘制可见的点
                 if (i % Math.ceil(values.length / 10) === 0 || i === points.length - 1) {
                     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                     circle.setAttribute('cx', p.x);
@@ -505,7 +635,7 @@
                     text.setAttribute('text-anchor', 'middle');
                     text.setAttribute('font-size', '10');
                     text.setAttribute('fill', '#333');
-                    text.textContent = p.value.toFixed(1);
+                    text.textContent = label === '涨停数' ? p.value.toFixed(0) : p.value.toFixed(1);
                     svg.appendChild(text);
                 }
             });

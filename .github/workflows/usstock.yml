@@ -27,8 +27,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install scrapling yfinance playwright browserforge
-
+        pip install scrapling yfinance playwright browserforge beautifulsoup4
     - name: Run Insider Trading Scraper
       run: |
         ls

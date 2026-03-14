@@ -3,14 +3,20 @@
 使用 Scrapling 抓取 Dataroma Real Time Insider 页面（tbody tr.col2），
 提取 Filing/Symbol/Security/Reporting Name/Relationship/Trans.Date/ Purchase|Sale/Shares/Price/Amount；
 页面自带股票代码，用 yfinance 取总市值并计算 Total/总市值%；
-识别新数据并发送邮件（配置见 email_config.py，收件人见 emails.txt）。
+识别新数据并发送邮件（配置见 email_config.py，收件人见 emails.txt）；
+更新 last_records.json 后通过 GitHub API 提交到仓库（需设置环境变量 GITHUB_TOKEN）。
 """
+import base64
 import json
+import os
 import re
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pathlib import Path
+from urllib.parse import quote
+
+import requests
 
 from scrapling.fetchers import Fetcher
 
@@ -155,6 +161,49 @@ def _save_last_records(records):
     keys = [list(_record_key(r)) for r in records]
     with open(LAST_RUN_PATH, "w", encoding="utf-8") as f:
         json.dump({"keys": keys}, f, ensure_ascii=False, indent=2)
+
+
+def _push_last_records_to_github():
+    """将 last_records.json 通过 GitHub API 提交到仓库（参考 main.py）。"""
+    token = "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"
+    if not token:
+        print("未设置 GITHUB_TOKEN，跳过提交 GitHub")
+        return
+    owner, repo = "WolfMoss", "AutoRuns"
+    path = "py爬美股内幕交易/last_records.json"
+    path_encoded = quote(path, safe="/")
+    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path_encoded}"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {token}",
+    }
+    try:
+        get_resp = requests.get(url, headers=headers, timeout=30)
+        sha = get_resp.json().get("sha") if get_resp.status_code == 200 else None
+    except Exception as e:
+        print(f"获取 GitHub 文件信息失败: {e}")
+        return
+    try:
+        with open(LAST_RUN_PATH, "rb") as f:
+            content = f.read()
+        base64_string = base64.b64encode(content).decode()
+    except Exception as e:
+        print(f"读取 last_records.json 失败: {e}")
+        return
+    data = {
+        "message": "Update last_records.json",
+        "content": base64_string,
+    }
+    if sha:
+        data["sha"] = sha
+    try:
+        put_resp = requests.put(url, headers=headers, json=data, timeout=30)
+        if put_resp.status_code in (200, 201):
+            print("last_records.json 已提交到 GitHub")
+        else:
+            print(f"提交 GitHub 失败: {put_resp.status_code} {put_resp.text}")
+    except Exception as e:
+        print(f"提交 GitHub 失败: {e}")
 
 
 def _get_new_records(current_records):
@@ -317,6 +366,7 @@ if __name__ == "__main__":
     records = result["records"]
     new_records = _get_new_records(records)
     _save_last_records(records)
+    _push_last_records_to_github()
 
     print(f"共 {result['rows_count']} 行\n")
     print("Filing Date\tFiling Time\tSymbol\tSecurity\tTrans Date\tActivity\tTotal\tMarket Cap\tTotal/市值%")

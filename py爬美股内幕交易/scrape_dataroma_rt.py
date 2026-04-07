@@ -58,7 +58,8 @@ def _get_market_cap(symbol):
 
 
 def scrape_insider_tbody():
-    page = Fetcher.get(INSIDER_URL)
+    # 显式使用布尔值，兼容 curl_cffi 对 allow_redirects 的 int 转换。
+    page = Fetcher.get(INSIDER_URL, allow_redirects=True)
 
     # 数据行：tbody 下 tr.col2
     rows = page.css("tbody tr.col2")

@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -32,6 +32,8 @@ jobs:
         pip install xlsxwriter
         pip install chinesecalendar
     - name: Run weather Report
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         ls
         cd PYQingXuZQ

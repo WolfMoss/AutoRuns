@@ -10,6 +10,7 @@ import openpyxl
 import os
 import base64
 import chinese_calendar as cal
+from urllib.parse import quote
 
 
 def file_to_base64(file_path):
@@ -245,53 +246,48 @@ def print_hi(name):
     data.save(xlsxpatch)
     print("完成，excel新增了一行，请打开查看！")
 
-    url = "https://api.github.com/repos/WolfMoss/AutoRuns/contents/PYQingXuZQ/晋级率模板.xlsx"
+    token = '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'
+    if not token:
+        print('未设置 GITHUB_TOKEN，跳过提交 GitHub')
+        return
 
-    payload = {}
+    owner, repo = 'WolfMoss', 'AutoRuns'
+    file_path = 'PYQingXuZQ/晋级率模板.xlsx'
+    path_encoded = quote(file_path, safe='/')
+    url = f'https://api.github.com/repos/{owner}/{repo}/contents/{path_encoded}'
     headers = {
         'Accept': 'application/vnd.github+json',
-        'Authorization': 'Bearer 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'
+        'Authorization': f'Bearer {token}',
     }
 
-    response = requests.request("GET", url, headers=headers, data=payload)
+    try:
+        get_resp = requests.get(url, headers=headers, timeout=30)
+        if get_resp.status_code == 200:
+            sha = get_resp.json().get('sha')
+        else:
+            sha = None
+            print(f'获取 GitHub 文件信息失败: {get_resp.status_code} {get_resp.text}')
+    except Exception as e:
+        print(f'获取 GitHub 文件信息失败: {e}')
+        return
 
-    oldfilejson= response.json()
-
-    # 将文件转换为 Base64
     base64_string = file_to_base64(xlsxpatch)
 
-    #print('Base64 编码:', base64_string)
-
-    # GitHub API 地址
-    url = 'https://api.github.com/repos/{owner}/{repo}/contents/{path}'
-
-    # 请求头中需要包含身份验证信息
-    headers = {
-        'Authorization': 'Bearer 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',
-        'Accept': 'application/vnd.github+json'
-    }
-
-    # 文件路径和内容
-    file_path = 'PYQingXuZQ/晋级率模板.xlsx'
-
-    # 构建请求数据
     data = {
         'message': 'Update file',
         'content': base64_string,
-        'sha':oldfilejson['sha']
     }
+    if sha:
+        data['sha'] = sha
 
-    # 替换 URL 中的占位符
-    url = url.format(owner='WolfMoss', repo='AutoRuns', path=file_path)
-
-    # 发送 PUT 请求来更新文件
-    response = requests.put(url, headers=headers, json=data)
-
-    # 检查响应状态码
-    if response.status_code == 200:
-        print('文件更新成功')
-    else:
-        print('文件更新失败:', response.text)
+    try:
+        response = requests.put(url, headers=headers, json=data, timeout=30)
+        if response.status_code in (200, 201):
+            print('文件更新成功')
+        else:
+            print(f'文件更新失败: {response.status_code} {response.text}')
+    except Exception as e:
+        print(f'提交 GitHub 失败: {e}')
 
 # 按间距中的绿色按钮以运行脚本。
 if __name__ == '__main__':

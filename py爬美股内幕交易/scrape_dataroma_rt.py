@@ -166,7 +166,7 @@ def _save_last_records(records):
 
 def _push_last_records_to_github():
     """将 last_records.json 通过 GitHub API 提交到仓库（参考 main.py）。"""
-    token = "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"
+    token = os.environ.get("GITHUB_TOKEN") or "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"
     if not token:
         print("未设置 GITHUB_TOKEN，跳过提交 GitHub")
         return

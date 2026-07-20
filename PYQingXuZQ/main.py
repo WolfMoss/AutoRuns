@@ -246,7 +246,7 @@ def print_hi(name):
     data.save(xlsxpatch)
     print("完成，excel新增了一行，请打开查看！")
 
-    token = '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'
+    token = os.environ.get('GITHUB_TOKEN') or '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'
     if not token:
         print('未设置 GITHUB_TOKEN，跳过提交 GitHub')
         return

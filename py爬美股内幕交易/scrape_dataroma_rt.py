@@ -347,10 +347,15 @@ def _send_email(records_to_send):
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
     try:
-        with smtplib.SMTP(server, port) as s:
-            s.starttls()
-            s.login(user, password)
-            s.sendmail(user, to_list, msg.as_string())
+        if int(port) == 465:
+            with smtplib.SMTP_SSL(server, port) as s:
+                s.login(user, password)
+                s.sendmail(user, to_list, msg.as_string())
+        else:
+            with smtplib.SMTP(server, port) as s:
+                s.starttls()
+                s.login(user, password)
+                s.sendmail(user, to_list, msg.as_string())
         pct_note = f"，Total/市值% ≥ {min_pct}%" if min_pct and min_pct > 0 else ""
         print(f"已向 {len(to_list)} 个邮箱发送邮件（共 {len(records_to_send)} 条记录{pct_note}）")
         return True
